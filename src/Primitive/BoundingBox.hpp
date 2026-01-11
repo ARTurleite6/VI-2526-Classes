@@ -4,17 +4,21 @@
 #include "Ray/Ray.hpp"
 
 namespace VI {
-inline constexpr float MachineEpsilon =
-    std::numeric_limits<float>::epsilon() * 0.5;
+constexpr float MachineEpsilon = std::numeric_limits<float>::epsilon() * 0.5;
 
-inline constexpr float gamma(int n) {
+constexpr float gamma(int n) {
   return (n * MachineEpsilon) / (1 - n * MachineEpsilon);
 }
 
 struct BoundingBox {
-  Point Min, Max;
+  Point Min{std::numeric_limits<float>::max(),
+            std::numeric_limits<float>::max(),
+            std::numeric_limits<float>::max()};
+  Point Max{std::numeric_limits<float>::lowest(),
+            std::numeric_limits<float>::lowest(),
+            std::numeric_limits<float>::lowest()};
 
-  constexpr void Update(Point p) {
+  constexpr void Update(const Point &p) {
     if (p.x < Min.x) {
       Min.x = p.x;
     } else if (p.x > Max.x) {
@@ -45,7 +49,6 @@ struct BoundingBox {
       t_near = t_far;
       t_far = aux;
     }
-    // pbrt 3rd edition, pag 221 (pbrt.org)
     t_far *= 1 + 2 * gamma(3);
     t0 = t_near > t0 ? t_near : t0;
     t1 = t_far < t1 ? t_far : t1;
@@ -62,7 +65,6 @@ struct BoundingBox {
       t_near = t_far;
       t_far = aux;
     }
-    // pbrt 3rd edition, pag 221 (pbrt.org)
     t_far *= 1 + 2 * gamma(3);
     t0 = t_near > t0 ? t_near : t0;
     t1 = t_far < t1 ? t_far : t1;
@@ -79,7 +81,6 @@ struct BoundingBox {
       t_near = t_far;
       t_far = aux;
     }
-    // pbrt 3rd edition, pag 221 (pbrt.org)
     t_far *= 1 + 2 * gamma(3);
     t0 = t_near > t0 ? t_near : t0;
     t1 = t_far < t1 ? t_far : t1;

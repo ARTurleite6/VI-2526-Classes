@@ -19,7 +19,7 @@ Camera::Camera(Point eye, Point at, Vector up, int width, int height,
   float viewport_width = viewport_height * m_Width / m_Height;
 
   Vector viewport_u = viewport_width * right;
-  Vector viewport_v = viewport_height * m_Up;
+  Vector viewport_v = -viewport_height * m_Up;
 
   m_PixelDeltaU = viewport_u / static_cast<float>(m_Width);
   m_PixelDeltaV = viewport_v / static_cast<float>(m_Height);

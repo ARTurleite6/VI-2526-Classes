@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Primitive/Geometry/Geometry.hpp"
-
 namespace VI {
 
+class Geometry;
+
 struct Primitive {
-  std::shared_ptr<Geometry> Geometry;
+  std::unique_ptr<Geometry> Geometry;
   int MaterialIndex;
 };
 

@@ -1,0 +1,307 @@
+#include "Scene/SceneBuilder.hpp"
+
+#include "Primitive/Geometry/Mesh.hpp"
+#include "Scene/Scene.hpp"
+
+namespace VI {
+Scene CreateCornellBox() {
+  Scene scene;
+
+  const int white_mat =
+      scene.AddMaterial({"White Material", {0.8, 0.8, 0.8}, 1});
+  const int red_mat = scene.AddMaterial({"Red Material", {0.5, 0.1, 0.1}, 1});
+  const int green_mat = scene.AddMaterial({"Green Material", {0., 0.6, 0.}, 1});
+  const int blue_mat = scene.AddMaterial({"Blue Material", {0., 0., 0.6}, 1});
+  const int orange_mat =
+      scene.AddMaterial({"Orange Material", {0.66, 0.44, 0.}, 1});
+  const int mirror_mat =
+      scene.AddMaterial({"Mirror Material", {0.f, 0.f, 0.f}, 0.4});
+
+  // Floor
+  {
+    scene.AddPrimitive(
+        std::make_unique<Mesh>(
+            "Floor",
+            std::vector<Triangle>{
+                Triangle{
+                    Point{552.8, 0.0, 0.0},
+                    Point{-100.0, 0.0, 0.0},
+                    Point{-100.0, 0.0, 859.2},
+                    Vector{0.0, 1.0, 0.0}, // normal for all three vertices
+                },
+                Triangle{
+                    Point{549.6, 0.0, 859.2},
+                    Point{552.8, 0.0, 0.0},
+                    Point{-100.0, 0.0, 859.2},
+                    Vector{0.0, 1.0, 0.0},
+                }}),
+        white_mat);
+  }
+  // Ceiling
+  {
+    scene.AddPrimitive(
+        std::make_unique<Mesh>(
+            "Ceiling", std::vector<Triangle>{Triangle{
+                                                 Point{556.0, 548.8, 0.0},
+                                                 Point{-100.0, 548.8, 0.0},
+                                                 Point{-100.0, 548.8, 459.2},
+                                                 Vector{0.0, -1.0, 0.0},
+                                             },
+                                             Triangle{
+                                                 Point{556.0, 548.8, 459.2},
+                                                 Point{556.0, 548.8, 0.0},
+                                                 Point{-100.0, 548.8, 459.2},
+                                                 Vector{0.0, -1.0, 0.0},
+                                             }}),
+        white_mat);
+  }
+  // Back wall
+  {
+    scene.AddPrimitive(
+        std::make_unique<Mesh>(
+            "Back Wall", std::vector<Triangle>{Triangle{
+                                                   Point{-100.0, 0.0, 459.2},
+                                                   Point{549.6, 0.0, 459.2},
+                                                   Point{556.0, 548.8, 459.2},
+                                                   Vector{0.0, 0.0, -1.0},
+                                               },
+                                               Triangle{
+                                                   Point{-100.0, 0.0, 459.2},
+                                                   Point{-100.0, 548.8, 459.2},
+                                                   Point{556.0, 548.8, 459.2},
+                                                   Vector{0.0, 0.0, -1.0},
+                                               }}),
+        white_mat);
+  }
+  // Right Wall
+  {
+    scene.AddPrimitive(
+        std::make_unique<Mesh>(
+            "Right Wall", std::vector<Triangle>{Triangle{
+                                                    Point{-100.0, 0.0, 0.0},
+                                                    Point{-100.0, 0.0, 459.2},
+                                                    Point{-100.0, 548.8, 459.2},
+                                                    Vector{1.0, 0.0, 0.0},
+                                                },
+                                                Triangle{
+                                                    Point{-100.0, 0.0, 0.0},
+                                                    Point{-100.0, 548.8, 0.0},
+                                                    Point{-100.0, 548.8, 459.2},
+                                                    Vector{1.0, 0.0, 0.0},
+                                                }}),
+        green_mat);
+  }
+
+  { // Left Wall Mirror
+
+    scene.AddPrimitive(std::make_unique<Mesh>(
+                           "Right Wall Mirror",
+                           std::vector<Triangle>{Triangle{
+                                                     Point{540, 50.0, 50.0},
+                                                     Point{540, 50.0, 509.2},
+                                                     Point{540, 488.8, 509.2},
+                                                     Vector{-1.0, 0.0, 0.0},
+                                                 },
+                                                 Triangle{
+                                                     Point{540, 50.0, 50.},
+                                                     Point{540, 488.8, 50.},
+                                                     Point{540, 488.8, 509.2},
+                                                     Vector{-1.0, 0.0, 0.0},
+                                                 }}),
+                       mirror_mat);
+  }
+
+  // Left Wall
+  {
+    scene.AddPrimitive(
+        std::make_unique<Mesh>(
+            "Left Wall", std::vector<Triangle>{Triangle{
+                                                   Point{552.8, 0.0, 0.0},
+                                                   Point{549.6, 0.0, 459.2},
+                                                   Point{549.6, 548.8, 459.2},
+                                                   Vector{-1.0, 0.0, 0.0},
+                                               },
+                                               Triangle{
+                                                   Point{552.8, 0.0, 0.0},
+                                                   Point{552.8, 548.8, 0.0},
+                                                   Point{549.6, 548.8, 459.2},
+                                                   Vector{-1.0, 0.0, 0.0},
+                                               }}),
+        red_mat);
+  }
+  // short block
+  {
+    scene.AddPrimitive(
+        std::make_unique<Mesh>("Short Block",
+                               std::vector<Triangle>{
+                                   // top
+                                   Triangle{
+                                       Point{130.0, 165.0, 65.0},
+                                       Point{82.0, 165.0, 225.0},
+                                       Point{240.0, 165.0, 272.0},
+                                       Vector{0.0, 1.0, 0.0},
+                                   },
+                                   Triangle{
+                                       Point{130.0, 165.0, 65.0},
+                                       Point{290.0, 165.0, 114.0},
+                                       Point{240.0, 165.0, 272.0},
+                                       Vector{0.0, 1.0, 0.0},
+                                   },
+                                   // bottom
+                                   Triangle{
+                                       Point{130.0, 0.01, 65.0},
+                                       Point{82.0, 0.01, 225.0},
+                                       Point{240.0, 0.01, 272.0},
+                                       Vector{0.0, -1.0, 0.0},
+                                   },
+                                   Triangle{
+                                       Point{130.0, 0.01, 65.0},
+                                       Point{290.0, 0.01, 114.0},
+                                       Point{240.0, 0.01, 272.0},
+                                       Vector{0.0, -1.0, 0.0},
+                                   },
+                                   // left
+                                   Triangle{
+                                       Point{290.0, 0.0, 114.0},
+                                       Point{290.0, 165.0, 114.0},
+                                       Point{240.0, 165.0, 272.0},
+                                       Vector{0.8944, 0.0, 0.4472},
+                                   },
+                                   Triangle{
+                                       Point{290.0, 0.0, 114.0},
+                                       Point{240.0, 0.0, 272.0},
+                                       Point{240.0, 165.0, 272.0},
+                                       Vector{0.8944, 0.0, 0.4472},
+                                   },
+                                   // back
+                                   Triangle{
+                                       Point{240.0, 0.0, 272.0},
+                                       Point{240.0, 165.0, 272.0},
+                                       Point{82.0, 165.0, 225.0},
+                                       Vector{0.0, 0.0, 1.0},
+                                   },
+                                   Triangle{
+                                       Point{240.0, 0.0, 272.0},
+                                       Point{82.0, 0.0, 225.0},
+                                       Point{82.0, 165.0, 225.0},
+                                       Vector{0.0, 0.0, 1.0},
+                                   },
+                                   // right
+                                   Triangle{
+                                       Point{82.0, 0.0, 225.0},
+                                       Point{82.0, 165.0, 225.0},
+                                       Point{130.0, 165.0, 65.0},
+                                       Vector{-0.8944, 0.0, -0.4472},
+                                   },
+                                   Triangle{
+                                       Point{82.0, 0.0, 225.0},
+                                       Point{130.0, 0.0, 65.0},
+                                       Point{130.0, 165.0, 65.0},
+                                       Vector{-0.8944, 0.0, -0.4472},
+                                   },
+                                   // front
+                                   Triangle{
+                                       Point{130.0, 0.0, 65.0},
+                                       Point{130.0, 165.0, 65.0},
+                                       Point{290.0, 165.0, 114.0},
+                                       Vector{0.0, 0.0, -1.0},
+                                   },
+                                   Triangle{
+                                       Point{130.0, 0.0, 65.0},
+                                       Point{290.0, 0.0, 114.0},
+                                       Point{290.0, 165.0, 114.0},
+                                       Vector{0.0, 0.0, -1.0},
+                                   },
+                               }),
+        orange_mat);
+  }
+  // tall block
+  {
+    scene.AddPrimitive(
+        std::make_unique<Mesh>("Tall Block",
+                               std::vector<Triangle>{
+                                   // top
+                                   Triangle{
+                                       Point{423.0, 330.0, 247.0},
+                                       Point{265.0, 330.0, 296.0},
+                                       Point{314.0, 330.0, 456.0},
+                                       Vector{0.0, 1.0, 0.0},
+                                   },
+                                   Triangle{
+                                       Point{423.0, 330.0, 247.0},
+                                       Point{472.0, 330.0, 406.0},
+                                       Point{314.0, 330.0, 456.0},
+                                       Vector{0.0, 1.0, 0.0},
+                                   },
+                                   // bottom
+                                   Triangle{
+                                       Point{423.0, 0.1, 247.0},
+                                       Point{265.0, 0.1, 296.0},
+                                       Point{314.0, 0.1, 456.0},
+                                       Vector{0.0, -1.0, 0.0},
+                                   },
+                                   Triangle{
+                                       Point{423.0, 0.1, 247.0},
+                                       Point{472.0, 0.1, 406.0},
+                                       Point{314.0, 0.1, 456.0},
+                                       Vector{0.0, -1.0, 0.0},
+                                   },
+                                   // left
+                                   Triangle{
+                                       Point{423.0, 0.0, 247.0},
+                                       Point{423.0, 330.0, 247.0},
+                                       Point{472.0, 330.0, 406.0},
+                                       Vector{0.8944, 0.0, 0.4472},
+                                   },
+                                   Triangle{
+                                       Point{423.0, 0.0, 247.0},
+                                       Point{472.0, 0.0, 406.0},
+                                       Point{472.0, 330.0, 406.0},
+                                       Vector{0.8944, 0.0, 0.4472},
+                                   },
+                                   // back
+                                   Triangle{
+                                       Point{472.0, 0.0, 406.0},
+                                       Point{472.0, 330.0, 406.0},
+                                       Point{314.0, 330.0, 456.0},
+                                       Vector{0.0, 0.0, 1.0},
+                                   },
+                                   Triangle{
+                                       Point{472.0, 0.0, 406.0},
+                                       Point{314.0, 0.0, 456.0},
+                                       Point{314.0, 330.0, 456.0},
+                                       Vector{0.0, 0.0, 1.0},
+                                   },
+                                   // right
+                                   Triangle{
+                                       Point{314.0, 0.0, 456.0},
+                                       Point{314.0, 330.0, 456.0},
+                                       Point{265.0, 330.0, 296.0},
+                                       Vector{-0.8944, 0.0, -0.4472},
+                                   },
+                                   Triangle{
+                                       Point{314.0, 0.0, 456.0},
+                                       Point{265.0, 0.0, 296.0},
+                                       Point{265.0, 330.0, 296.0},
+                                       Vector{-0.8944, 0.0, -0.4472},
+                                   },
+                                   // front
+                                   Triangle{
+                                       Point{265.0, 0.0, 296.0},
+                                       Point{265.0, 330.0, 296.0},
+                                       Point{423.0, 330.0, 247.0},
+                                       Vector{0.0, 0.0, -1.0},
+                                   },
+                                   Triangle{
+                                       Point{265.0, 0.0, 296.0},
+                                       Point{423.0, 0.0, 247.0},
+                                       Point{423.0, 330.0, 247.0},
+                                       Vector{0.0, 0.0, -1.0},
+                                   },
+                               }),
+        blue_mat);
+  }
+
+  return scene;
+}
+} // namespace VI

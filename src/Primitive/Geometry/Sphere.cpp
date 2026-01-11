@@ -2,14 +2,15 @@
 
 #include <glm/geometric.hpp>
 
+#include "Math/Math.hpp"
+#include "Ray/Intersection.hpp"
+
 namespace VI {
 
 bool Sphere::Intersect(const Ray &ray, Intersection &intersection) const {
   if (!m_BoundingBox.Intersect(ray)) {
     return false;
   }
-
-  constexpr float EPSILON = std::numeric_limits<float>::epsilon();
 
   Vector oc = m_Center - ray.Origin;
 

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Camera/Camera.hpp"
-#include "Image/Image.hpp"
-#include "Scene/Scene.hpp"
-#include "Shaders/Shader.hpp"
-
 namespace VI {
-class Renderer {
+class Scene;
+class Camera;
+class Image;
+class Shader;
+
+class Renderer final {
 public:
   void Render(const Scene &scene, const Camera &camera, const Shader &shader,
               Image &image);

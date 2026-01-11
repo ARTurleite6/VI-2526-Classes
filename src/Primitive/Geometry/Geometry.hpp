@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Ray/Intersection.hpp"
-#include "Ray/Ray.hpp"
-
 namespace VI {
+
+class Ray;
+class Intersection;
 
 class Geometry {
 public:

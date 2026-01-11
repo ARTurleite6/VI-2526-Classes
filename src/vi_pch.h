@@ -1,9 +1,11 @@
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <string>

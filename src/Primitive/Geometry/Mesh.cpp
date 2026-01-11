@@ -1,23 +1,26 @@
-#include "Scene/Scene.hpp"
+#include "Primitive/Geometry/Mesh.hpp"
 
 #include "Ray/Intersection.hpp"
 #include "Ray/Ray.hpp"
 
 namespace VI {
+bool Mesh::Intersect(const Ray &r, Intersection &intersection) const {
+  if (!m_BoundingBox.Intersect(r)) {
+    return false;
+  }
 
-bool Scene::Trace(const Ray &ray, Intersection &intersection) const {
   intersection.Distance = -1;
 
-  for (int i = 0; i < m_Primitives.size(); i++) {
-    const auto &primitive = m_Primitives[i];
+  for (int i = 0; i < m_Triangles.size(); i++) {
+    const auto &triangle = m_Triangles[i];
 
     Intersection temp_intersection{};
 
-    if (primitive.Geometry->Intersect(ray, temp_intersection)) {
+    if (triangle.Intersect(r, temp_intersection)) {
       if (intersection.Distance == -1 ||
           intersection.Distance > temp_intersection.Distance) {
         intersection = temp_intersection;
-        intersection.ObjectIndex = i;
+        intersection.PrimitiveIndex = i;
       }
     }
   }

@@ -17,8 +17,8 @@ add_executable(VI-RT src/main.cpp
 
     # Image
     src/Image/Image.hpp
-    src/Image/ImagePPM.hpp
-    src/Image/ImagePPM.cpp
+    src/Image/FileImages.hpp
+    src/Image/FileImages.cpp
 
     # Camera
     src/Camera/Camera.hpp
@@ -27,14 +27,24 @@ add_executable(VI-RT src/main.cpp
     # Scene
     src/Scene/Scene.hpp
     src/Scene/Scene.cpp
+    src/Scene/SceneBuilder.hpp
+    src/Scene/SceneBuilder.cpp
 
     # Primitives
     src/Primitive/BRDF.hpp
     src/Primitive/BoundingBox.hpp
     src/Primitive/Primitive.hpp
+    src/Primitive/Material.hpp
     src/Primitive/Geometry/Geometry.hpp
     src/Primitive/Geometry/Sphere.hpp
     src/Primitive/Geometry/Sphere.cpp
+    src/Primitive/Geometry/Triangle.hpp
+    src/Primitive/Geometry/Triangle.cpp
+    src/Primitive/Geometry/Mesh.hpp
+    src/Primitive/Geometry/Mesh.cpp
+
+    # Lights
+    src/Light/Light.hpp
 
     # Math
     src/Math/RGB.hpp
@@ -47,6 +57,8 @@ add_executable(VI-RT src/main.cpp
     src/Shaders/DummyShader.hpp
     src/Shaders/AmbientShader.hpp
     src/Shaders/AmbientShader.cpp
+    src/Shaders/WhittedShader.hpp
+    src/Shaders/WhittedShader.cpp
 )
 target_include_directories(VI-RT PRIVATE src)
 target_precompile_headers(VI-RT PRIVATE src/vi_pch.h)

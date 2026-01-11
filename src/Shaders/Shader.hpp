@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Camera/Camera.hpp"
 #include "Math/RGB.hpp"
-#include "Scene/Scene.hpp"
 
 namespace VI {
+class Camera;
+class Scene;
+
 class Shader {
 public:
   virtual ~Shader() = default;

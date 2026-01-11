@@ -4,7 +4,7 @@
 #include "Ray/Ray.hpp"
 
 namespace VI {
-class Camera {
+class Camera final {
 public:
   struct Resolution {
     float Width, Height;
