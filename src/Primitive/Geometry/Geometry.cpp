@@ -1,0 +1,10 @@
+#include "Primitive/Geometry/Geometry.hpp"
+
+namespace VI {
+bool Intersect(const Geometry &geom, const Ray &ray,
+               Intersection &intersection) {
+  return std::visit(
+      [&](const auto &shape) { return shape.Intersect(ray, intersection); },
+      geom);
+}
+} // namespace VI

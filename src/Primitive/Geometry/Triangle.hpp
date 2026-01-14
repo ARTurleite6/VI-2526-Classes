@@ -2,10 +2,12 @@
 
 #include "Math/Vector.hpp"
 #include "Primitive/BoundingBox.hpp"
-#include "Primitive/Geometry/Geometry.hpp"
 
 namespace VI {
-class Triangle final : public Geometry {
+class Intersection;
+class Ray;
+
+class Triangle final {
 public:
   Triangle(const Point &v1, const Point &v2, const Point &v3,
            const Vector &normal, bool back_face_culling = false)
@@ -16,7 +18,7 @@ public:
     m_BoundingBox.Update(v3);
   }
 
-  bool Intersect(const Ray &r, Intersection &i) const override;
+  bool Intersect(const Ray &r, Intersection &i) const;
 
   std::tuple<Point, Point, Point> GetVertices() const {
     return std::make_tuple(m_V1, m_V2, m_V3);

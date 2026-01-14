@@ -1,15 +1,19 @@
 #pragma once
 
+#include "Mesh.hpp"
+#include "Sphere.hpp"
+#include "Triangle.hpp"
+
 namespace VI {
 
 class Ray;
 class Intersection;
 
-class Geometry {
-public:
-  virtual ~Geometry() = default;
+// TODO: check if this should be a variant or if we should just have an
+// array for each type of shape on the Scene.
+using Geometry = std::variant<Sphere, Triangle, Mesh>;
 
-  virtual bool Intersect(const Ray &r, Intersection &i) const = 0;
-};
+bool Intersect(const Geometry &geom, const Ray &ray,
+               Intersection &intersection);
 
 } // namespace VI

@@ -36,6 +36,7 @@ add_executable(VI-RT src/main.cpp
     src/Primitive/Primitive.hpp
     src/Primitive/Material.hpp
     src/Primitive/Geometry/Geometry.hpp
+    src/Primitive/Geometry/Geometry.cpp
     src/Primitive/Geometry/Sphere.hpp
     src/Primitive/Geometry/Sphere.cpp
     src/Primitive/Geometry/Triangle.hpp

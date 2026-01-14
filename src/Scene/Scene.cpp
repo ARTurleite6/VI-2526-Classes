@@ -13,7 +13,7 @@ bool Scene::Trace(const Ray &ray, Intersection &intersection) const {
 
     Intersection temp_intersection{};
 
-    if (primitive.Geometry->Intersect(ray, temp_intersection)) {
+    if (Intersect(primitive.Geometry, ray, temp_intersection)) {
       if (intersection.Distance == -1 ||
           intersection.Distance > temp_intersection.Distance) {
         intersection = temp_intersection;

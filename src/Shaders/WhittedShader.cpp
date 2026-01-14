@@ -28,6 +28,9 @@ RGB WhittedShader::Execute(int x, int y, const Scene &scene,
 
     const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
     const Material &material = scene.GetMaterial(primitive.MaterialIndex);
+    const bool front_facing = glm::dot(intersection.Normal, -ray.Direction);
+    const Vector shading_normal =
+        front_facing ? intersection.Normal : -intersection.Normal;
 
     for (const auto &light : scene.GetLights()) {
       const auto &light_material = scene.GetMaterial(light.MaterialIndex);
@@ -35,16 +38,16 @@ RGB WhittedShader::Execute(int x, int y, const Scene &scene,
       if (light.Type == LightType::Ambient) {
         color += material.GetAlbedo() * light_material.GetRadiance();
       } else if (light.Type == LightType::Point) {
-        Vector light_position = light.Position;
-        Vector direction =
+        const Vector light_position = light.Position;
+        const Vector direction =
             glm::normalize(light_position - intersection.Position);
-        float light_distance =
+        const float light_distance =
             glm::length(light_position - intersection.Position);
 
-        if (float cos_light = glm::dot(direction, intersection.Normal);
+        if (const float cos_light = glm::dot(direction, intersection.Normal);
             cos_light > 0) {
-          Ray shadow_ray{intersection.Position + EPSILON * direction,
-                         direction};
+          const auto shadow_ray = Ray::WithOffset(
+              intersection.Position, direction, intersection.Normal);
 
           Intersection shadow_intersection{};
           if (!scene.Trace(shadow_ray, shadow_intersection) ||
@@ -61,12 +64,8 @@ RGB WhittedShader::Execute(int x, int y, const Scene &scene,
 
     // Reflection
     // Prepare reflected ray
-    Vector reflected = glm::reflect(ray.Direction, intersection.Normal);
-    Vector offset = EPSILON * intersection.Normal;
-    if (glm::dot(reflected, intersection.Normal) < 0)
-      offset *= -1.0f;
-    ray.Origin = intersection.Position + offset;
-    ray.Direction = reflected;
+    const Vector reflected = glm::reflect(ray.Direction, shading_normal);
+    ray = Ray::WithOffset(intersection.Position, reflected, shading_normal);
   }
 
   return color;

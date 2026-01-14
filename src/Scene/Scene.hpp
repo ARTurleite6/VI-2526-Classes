@@ -14,7 +14,9 @@ class Scene final {
 public:
   bool Trace(const Ray &ray, Intersection &intersection) const;
 
-  void AddPrimitive(std::unique_ptr<Geometry> primitive, int material_index) {
+  // TODO: check this to check if we should receive geometry as value, l-value
+  // or r-value
+  void AddPrimitive(Geometry primitive, int material_index) {
     assert(material_index >= 0 && material_index < m_Materials.size() &&
            "Material index out of range");
 

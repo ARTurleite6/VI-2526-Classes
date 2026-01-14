@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Primitive/BoundingBox.hpp"
-#include "Primitive/Geometry/Geometry.hpp"
 #include "Primitive/Geometry/Triangle.hpp"
 
 namespace VI {
@@ -9,7 +8,7 @@ namespace VI {
 class Ray;
 class Intersection;
 
-class Mesh final : public Geometry {
+class Mesh final {
 public:
   Mesh(std::string_view name) : m_Name{} {}
   Mesh(std::string_view name, const std::vector<Triangle> triangles)
@@ -26,7 +25,7 @@ public:
     }
   }
 
-  bool Intersect(const Ray &r, Intersection &i) const override;
+  bool Intersect(const Ray &r, Intersection &i) const;
 
   void AddTriangle(const Triangle &triangle) {
     m_Triangles.push_back(triangle);

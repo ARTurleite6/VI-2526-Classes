@@ -2,16 +2,18 @@
 
 #include "Math/Vector.hpp"
 #include "Primitive/BoundingBox.hpp"
-#include "Primitive/Geometry/Geometry.hpp"
 
 namespace VI {
-class Sphere final : public Geometry {
+class Intersection;
+class Ray;
+
+class Sphere final {
 public:
   Sphere(Point center, float radius)
       : m_Center(center), m_Radius(radius),
         m_BoundingBox(center - radius, center + radius) {}
 
-  bool Intersect(const Ray &r, Intersection &i) const override;
+  bool Intersect(const Ray &r, Intersection &i) const;
 
 private:
   Point m_Center;
