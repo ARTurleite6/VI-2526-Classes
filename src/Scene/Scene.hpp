@@ -7,8 +7,8 @@
 
 namespace VI {
 
-class Ray;
-class Intersection;
+struct Ray;
+struct Intersection;
 
 class Scene final {
 public:

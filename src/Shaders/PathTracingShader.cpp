@@ -10,7 +10,7 @@
 
 namespace VI {
 constexpr float MAX_DEPTH = 5;
-constexpr int SAMPLES_PER_PIXEL = 1024;
+constexpr int SAMPLES_PER_PIXEL = 32;
 
 inline float max3(const Vector &v) { return std::max(v.x, std::max(v.y, v.z)); }
 

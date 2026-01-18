@@ -11,7 +11,7 @@ bool Mesh::Intersect(const Ray &r, Intersection &intersection) const {
 
   intersection.Distance = -1;
 
-  for (int i = 0; i < m_Triangles.size(); i++) {
+  for (size_t i = 0; i < m_Triangles.size(); i++) {
     const auto &triangle = m_Triangles[i];
 
     Intersection temp_intersection{};

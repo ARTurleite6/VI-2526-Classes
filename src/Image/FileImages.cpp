@@ -2,7 +2,7 @@
 
 namespace VI {
 
-Image ImagePPM::Load(const std::string &filename) {
+Image ImagePPM::Load(const std::string &filename [[maybe_unused]]) {
   throw std::runtime_error("Not implemented");
 }
 

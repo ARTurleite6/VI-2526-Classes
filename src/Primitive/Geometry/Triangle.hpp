@@ -4,8 +4,8 @@
 #include "Primitive/BoundingBox.hpp"
 
 namespace VI {
-class Intersection;
-class Ray;
+struct Ray;
+struct Intersection;
 
 class Triangle final {
 public:

@@ -10,7 +10,8 @@ struct Ray {
 
   static Ray WithOffset(const Point &origin, const Vector &direction,
                         const Vector &normal, float epsilon = EPSILON) {
-    return {.Origin = OffsetPoint(origin, normal), .Direction = direction};
+    return {.Origin = OffsetPoint(origin, normal, epsilon),
+            .Direction = direction};
   }
 };
 } // namespace VI

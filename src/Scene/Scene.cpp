@@ -8,7 +8,7 @@ namespace VI {
 bool Scene::Trace(const Ray &ray, Intersection &intersection) const {
   intersection.Distance = -1;
 
-  for (int i = 0; i < m_Primitives.size(); i++) {
+  for (size_t i = 0; i < m_Primitives.size(); i++) {
     const auto &primitive = m_Primitives[i];
 
     Intersection temp_intersection{};

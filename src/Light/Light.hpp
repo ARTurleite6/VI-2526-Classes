@@ -15,11 +15,4 @@ struct Light {
   int ObjectIndex{-1};
   LightType Type;
 };
-
-// class Light {
-// public:
-//   virtual ~Light() = default;
-//   virtual LightType GetType() const = 0;
-//   virtual RGB GetRadiance() const = 0;
-// };
 } // namespace VI

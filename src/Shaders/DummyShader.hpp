@@ -7,7 +7,8 @@
 namespace VI {
 class DummyShader final : public Shader {
 public:
-  RGB Execute(int x, int y, const Scene &scene, const Camera &camera) const {
+  RGB Execute(int x, int y, const Scene &scene [[maybe_unused]],
+              const Camera &camera) const {
     auto [width, height] = camera.GetResolution();
 
     return {x / width, y / height, 0.f};

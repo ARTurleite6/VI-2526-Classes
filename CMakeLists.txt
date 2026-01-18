@@ -9,6 +9,12 @@ add_subdirectory(external/glm)
 add_executable(VI-RT src/main.cpp
     src/Log/Log.hpp
 
+    src/Utils/ProgressBar.hpp
+    src/Utils/ProgressBar.cpp
+
+    src/Utils/ThreadPool.hpp
+    src/Utils/ThreadPool.cpp
+
     # Ray
     src/Ray/Ray.hpp
     src/Ray/Intersection.hpp
@@ -72,3 +78,13 @@ target_include_directories(VI-RT PRIVATE src)
 target_precompile_headers(VI-RT PRIVATE src/vi_pch.h)
 
 target_link_libraries(VI-RT PRIVATE glm::glm)
+
+if (MSVC)
+    target_compile_options(VI-RT PRIVATE /W4 /WX)
+else()
+    target_compile_options(VI-RT PRIVATE -fcolor-diagnostics -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()

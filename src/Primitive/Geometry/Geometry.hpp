@@ -6,8 +6,8 @@
 
 namespace VI {
 
-class Ray;
-class Intersection;
+struct Ray;
+struct Intersection;
 
 // TODO: check if this should be a variant or if we should just have an
 // array for each type of shape on the Scene.

@@ -29,11 +29,6 @@ int main() {
 
   Scene scene = CreateCornellBox();
 
-  // int ambient_light_material = scene.AddMaterial(
-  //     {"Ambient Light", {0.f, 0.f, 0.f}, 1, {1.f, 1.f, 1.f}, 0.1f});
-  // scene.AddLight(
-  //     {.MaterialIndex = ambient_light_material, .Type = LightType::Ambient});
-
   int point_light = scene.AddMaterial(
       {"Point Light", {0.f, 0.f, 0.f}, 1, 0, {1.f, 1.f, 1.f}, 10.0f});
   scene.AddLight({.Position = {200, 520.0, 200},

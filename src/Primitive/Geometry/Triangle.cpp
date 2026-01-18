@@ -18,7 +18,6 @@ bool Triangle::Intersect(const Ray &r, Intersection &intersection) const {
 
   Vector edge1 = m_V2 - m_V1;
   Vector edge2 = m_V3 - m_V1;
-  Vector edge3 = m_V3 - m_V2;
 
   Vector h, s, q;
   float a, ff, u, v;

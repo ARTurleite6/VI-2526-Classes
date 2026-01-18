@@ -12,8 +12,8 @@ namespace VI {
 
 constexpr float MIN_ROUGHNESS = 0.02f;
 
-Vector LambertianBRDF::Sample(const Vector &wo_local,
-                              const Material &material) const {
+Vector LambertianBRDF::Sample(const Vector &wo_local [[maybe_unused]],
+                              const Material &material [[maybe_unused]]) const {
   float u1 = Random::RandomFloat(0, 1);
   float u2 = Random::RandomFloat(0, 1);
 
@@ -27,15 +27,16 @@ Vector LambertianBRDF::Sample(const Vector &wo_local,
   return Vector{x, y, z};
 }
 
-RGB LambertianBRDF::Evaluate(const Vector &wo_local, const Vector &wi_local,
+RGB LambertianBRDF::Evaluate(const Vector &wo_local [[maybe_unused]],
+                             const Vector &wi_local [[maybe_unused]],
                              const Material &material) const {
 
-  float cosine = glm::max(0.f, wi_local.z);
   return material.GetAlbedo() / glm::pi<float>();
 }
 
-float LambertianBRDF::PDF(const Vector &wo_local, const Vector &wi_local,
-                          const Material &material) const {
+float LambertianBRDF::PDF(const Vector &wo_local [[maybe_unused]],
+                          const Vector &wi_local,
+                          const Material &material [[maybe_unused]]) const {
   if (wi_local.z <= 0.f) {
     return 0.f;
   }

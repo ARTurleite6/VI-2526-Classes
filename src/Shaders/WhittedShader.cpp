@@ -22,7 +22,7 @@ RGB WhittedShader::Execute(int x, int y, const Scene &scene,
 
     Intersection intersection{};
     if (!scene.Trace(ray, intersection)) {
-      // color += m_BackgroundColor;
+      color += m_BackgroundColor;
       break;
     }
 

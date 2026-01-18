@@ -5,12 +5,11 @@
 
 namespace VI {
 
-class Ray;
-class Intersection;
+struct Ray;
+struct Intersection;
 
 class Mesh final {
 public:
-  Mesh(std::string_view name) : m_Name{} {}
   Mesh(std::string_view name, const std::vector<Triangle> triangles)
       : m_Name{name}, m_Triangles{triangles} {
     // Compute bounding box from triangles
