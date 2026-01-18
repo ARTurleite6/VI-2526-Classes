@@ -1,12 +1,16 @@
 #include <algorithm>
-#include <cassert>
 #include <array>
+#include <cassert>
+#include <chrono>
 #include <cmath>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <memory_resource>
 #include <optional>
+#include <print>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -15,5 +19,5 @@
 #include <utility>
 #include <variant>
 #include <vector>
-#include <memory_resource>
-#include <chrono>
+
+#include "Log/Log.hpp"

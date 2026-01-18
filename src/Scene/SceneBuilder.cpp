@@ -18,10 +18,10 @@ Scene CreateCornellBox() {
   const int orange_mat =
       scene.AddMaterial({"Orange Material", {0.66, 0.44, 0.}, 1.f, 0.f});
   const int mirror_mat =
-      scene.AddMaterial({"Mirror Material", {1.f, 1.f, 1.f}, 0.001f, 1.f});
+      scene.AddMaterial({"Mirror Material", {1.f, 1.f, 1.f}, 0.0f, 1.0f});
 
   const int light_mat = scene.AddMaterial(
-      {"Light", {1.f, 1.f, 1.f}, 1.f, 0.f, {1.f, 1.f, 1.f}, 5.0f});
+      {"Light", {1.f, 1.f, 1.f}, 1.f, 0.f, {1.f, 1.f, 1.f}, 10.0f});
 
   // Area Light (on the ceiling)
   {

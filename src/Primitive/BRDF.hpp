@@ -36,10 +36,9 @@ public:
             const Material &material) const override;
 
 private:
-  float D_GGX(const Vector &h, float alpha) const;
+  float D_GGX(float NoH, float alpha) const;
   RGB Fresnel_Schlick(float cos_theta, const RGB &F0) const;
-  float G_Smith(const Vector &wo, const Vector &wi, float alpha) const;
-  float G_SchlickGGX(float cosTheta, float alpha) const;
+  float G_Smith(float NoV, float NoL, float alpha) const;
   Vector SampleGGX(float alpha) const;
 };
 

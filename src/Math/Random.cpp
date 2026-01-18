@@ -1,12 +1,14 @@
 #include "Math/Random.hpp"
+#include <random>
 
 namespace VI {
 
-float Random::RandomFloat(int min, int max) {
-  return s_UniformDist(s_Rng) * (max - min) + min;
+float Random::RandomFloat(float min, float max) {
+  std::uniform_real_distribution<float> dist{min, max};
+  return dist(s_Rng);
 }
 
-Vector Random::RandomVec3(int min, int max) {
+Vector Random::RandomVec3(float min, float max) {
   return {
       RandomFloat(min, max),
       RandomFloat(min, max),
@@ -16,7 +18,7 @@ Vector Random::RandomVec3(int min, int max) {
 
 Point Random::RandomInUnitDisk() {
   while (true) {
-    Point p{s_UniformDist(s_Rng), s_UniformDist(s_Rng), 0.};
+    Point p = RandomVec3();
 
     if ((p.x * p.x + p.y * p.y) < 1.f) {
       return p;
@@ -25,6 +27,5 @@ Point Random::RandomInUnitDisk() {
 }
 
 std::mt19937 Random::s_Rng;
-std::uniform_real_distribution<float> Random::s_UniformDist{-1., 1.};
 
 } // namespace VI

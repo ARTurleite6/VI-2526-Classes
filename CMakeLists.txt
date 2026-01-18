@@ -7,6 +7,8 @@ project(VI-RT)
 add_subdirectory(external/glm)
 
 add_executable(VI-RT src/main.cpp
+    src/Log/Log.hpp
+
     # Ray
     src/Ray/Ray.hpp
     src/Ray/Intersection.hpp
