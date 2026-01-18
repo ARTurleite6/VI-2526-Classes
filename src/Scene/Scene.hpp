@@ -22,6 +22,14 @@ public:
 
     m_Primitives.push_back(Primitive{.Geometry = std::move(primitive),
                                      .MaterialIndex = material_index});
+
+    auto &material = m_Materials[material_index];
+    if (material.GetEmissionPower() > 0.f) {
+      m_Lights.emplace_back(
+          Light{.MaterialIndex = material_index,
+                .ObjectIndex = static_cast<int>(m_Primitives.size()),
+                .Type = LightType::Area});
+    }
   }
 
   int AddMaterial(const Material &material) {

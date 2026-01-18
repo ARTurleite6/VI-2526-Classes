@@ -32,6 +32,7 @@ add_executable(VI-RT src/main.cpp
 
     # Primitives
     src/Primitive/BRDF.hpp
+    src/Primitive/BRDF.cpp
     src/Primitive/BoundingBox.hpp
     src/Primitive/Primitive.hpp
     src/Primitive/Material.hpp
@@ -48,6 +49,8 @@ add_executable(VI-RT src/main.cpp
     src/Light/Light.hpp
 
     # Math
+    src/Math/Math.hpp
+    src/Math/Math.cpp
     src/Math/RGB.hpp
     src/Math/Vector.hpp
     src/Math/Random.hpp
@@ -60,6 +63,8 @@ add_executable(VI-RT src/main.cpp
     src/Shaders/AmbientShader.cpp
     src/Shaders/WhittedShader.hpp
     src/Shaders/WhittedShader.cpp
+    src/Shaders/PathTracingShader.hpp
+    src/Shaders/PathTracingShader.cpp
 )
 target_include_directories(VI-RT PRIVATE src)
 target_precompile_headers(VI-RT PRIVATE src/vi_pch.h)

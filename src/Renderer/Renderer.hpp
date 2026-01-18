@@ -1,14 +1,14 @@
 #pragma once
 
+#include "Image/Image.hpp"
+
 namespace VI {
 class Scene;
 class Camera;
-class Image;
 class Shader;
 
 class Renderer final {
 public:
-  void Render(const Scene &scene, const Camera &camera, const Shader &shader,
-              Image &image);
+  Image Render(const Scene &scene, const Camera &camera, const Shader &shader);
 };
 } // namespace VI

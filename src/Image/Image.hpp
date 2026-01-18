@@ -29,7 +29,7 @@ public:
   }
 
 private:
-  std::vector<RGB> m_Data{};
+  std::vector<RGB> m_Data;
   int m_Width, m_Height;
 };
 } // namespace VI

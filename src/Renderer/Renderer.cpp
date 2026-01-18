@@ -7,9 +7,12 @@
 
 namespace VI {
 
-void Renderer::Render(const Scene &scene, const Camera &camera,
-                      const Shader &shader, Image &image) {
+Image Renderer::Render(const Scene &scene, const Camera &camera,
+                      const Shader &shader) {
   auto [width, height] = camera.GetResolution();
+
+  Image image{static_cast<int>(width), static_cast<int>(height)};
+  
   for (int y = 0; y < static_cast<int>(height); ++y) {
     for (int x = 0; x < static_cast<int>(width); ++x) {
 
@@ -18,6 +21,8 @@ void Renderer::Render(const Scene &scene, const Camera &camera,
       image.Set(x, y, color);
     }
   }
+
+  return image;
 }
 
 } // namespace VI

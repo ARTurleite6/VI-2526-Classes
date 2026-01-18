@@ -6,11 +6,14 @@
 #include "Scene/SceneBuilder.hpp"
 #include "Shaders/AmbientShader.hpp"
 #include "Shaders/DummyShader.hpp"
+#include "Shaders/PathTracingShader.hpp"
 #include "Shaders/WhittedShader.hpp"
 
 using namespace VI;
 
 int main() {
+  auto begin = std::chrono::system_clock::now();
+
   constexpr int w = 800;
   constexpr int h = 600;
 
@@ -21,9 +24,8 @@ int main() {
   constexpr float fovH = 60.f;
   constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  Image image{800, 600};
   DummyShader shader;
-  WhittedShader whitted_shader{{0.0f, 1.0, 0.0}};
+  PathTracingShader whitted_shader{};
 
   Scene scene = CreateCornellBox();
 
@@ -33,14 +35,21 @@ int main() {
   //     {.MaterialIndex = ambient_light_material, .Type = LightType::Ambient});
 
   int point_light = scene.AddMaterial(
-      {"Point Light", {0.f, 0.f, 0.f}, 1, {1.f, 1.f, 1.f}, 1.0f});
+      {"Point Light", {0.f, 0.f, 0.f}, 1, 0, {1.f, 1.f, 1.f}, 10.0f});
   scene.AddLight({.Position = {200, 520.0, 200},
                   .MaterialIndex = point_light,
                   .Type = LightType::Point});
 
   Renderer renderer;
-  renderer.Render(scene, camera, whitted_shader, image);
+  const auto image = renderer.Render(scene, camera, whitted_shader);
 
   ImagePPM::Save(image, "image.ppm");
+
+  auto end = std::chrono::system_clock::now();
+
+  auto duration = std::chrono::duration<double>(end - begin);
+
+  std::cout << "Time it took to render: " << duration.count() << " sec" << '\n';
+
   return 0;
 }

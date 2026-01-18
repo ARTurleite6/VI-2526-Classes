@@ -2,6 +2,18 @@
 
 namespace VI {
 
+float Random::RandomFloat(int min, int max) {
+  return s_UniformDist(s_Rng) * (max - min) + min;
+}
+
+Vector Random::RandomVec3(int min, int max) {
+  return {
+      RandomFloat(min, max),
+      RandomFloat(min, max),
+      RandomFloat(min, max),
+  };
+}
+
 Point Random::RandomInUnitDisk() {
   while (true) {
     Point p{s_UniformDist(s_Rng), s_UniformDist(s_Rng), 0.};

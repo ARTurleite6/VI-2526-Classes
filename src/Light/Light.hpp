@@ -11,7 +11,8 @@ enum class LightType {
 
 struct Light {
   Point Position{};
-  int MaterialIndex;
+  int MaterialIndex{-1};
+  int ObjectIndex{-1};
   LightType Type;
 };
 

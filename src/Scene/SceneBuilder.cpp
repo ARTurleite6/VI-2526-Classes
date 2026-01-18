@@ -8,14 +8,39 @@ Scene CreateCornellBox() {
   Scene scene;
 
   const int white_mat =
-      scene.AddMaterial({"White Material", {0.8, 0.8, 0.8}, 1});
-  const int red_mat = scene.AddMaterial({"Red Material", {0.5, 0.1, 0.1}, 1});
-  const int green_mat = scene.AddMaterial({"Green Material", {0., 0.6, 0.}, 1});
-  const int blue_mat = scene.AddMaterial({"Blue Material", {0., 0., 0.6}, 1});
+      scene.AddMaterial({"White Material", {0.8, 0.8, 0.8}, 1.f, 0.f});
+  const int red_mat =
+      scene.AddMaterial({"Red Material", {0.5, 0.1, 0.1}, 1.f, 0.f});
+  const int green_mat =
+      scene.AddMaterial({"Green Material", {0., 0.6, 0.}, 1.f, 0.f});
+  const int blue_mat =
+      scene.AddMaterial({"Blue Material", {0., 0., 0.6}, 1.f, 0.f});
   const int orange_mat =
-      scene.AddMaterial({"Orange Material", {0.66, 0.44, 0.}, 1});
+      scene.AddMaterial({"Orange Material", {0.66, 0.44, 0.}, 1.f, 0.f});
   const int mirror_mat =
-      scene.AddMaterial({"Mirror Material", {0.f, 0.f, 0.f}, 0.4});
+      scene.AddMaterial({"Mirror Material", {1.f, 1.f, 1.f}, 0.001f, 1.f});
+
+  const int light_mat = scene.AddMaterial(
+      {"Light", {1.f, 1.f, 1.f}, 1.f, 0.f, {1.f, 1.f, 1.f}, 5.0f});
+
+  // Area Light (on the ceiling)
+  {
+    float y = 548.7f; // Slightly below the ceiling
+    scene.AddPrimitive(Mesh{"Ceiling Light",
+                            std::vector<Triangle>{Triangle{
+                                                      Point{213.0f, y, 227.0f},
+                                                      Point{343.0f, y, 227.0f},
+                                                      Point{343.0f, y, 332.0f},
+                                                      Vector{0.0f, -1.0f, 0.0f},
+                                                  },
+                                                  Triangle{
+                                                      Point{213.0f, y, 227.0f},
+                                                      Point{343.0f, y, 332.0f},
+                                                      Point{213.0f, y, 332.0f},
+                                                      Vector{0.0f, -1.0f, 0.0f},
+                                                  }}},
+                       light_mat);
+  }
 
   // Floor
   {
