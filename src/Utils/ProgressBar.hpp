@@ -1,7 +1,7 @@
 #pragma once
 
 namespace VI {
-class ProgressBar {
+class ProgressBar final {
 public:
   ProgressBar(int total, int bar_width = 50);
   void Increment(int n = 1);

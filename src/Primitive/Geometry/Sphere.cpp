@@ -8,7 +8,8 @@
 namespace VI {
 
 bool Sphere::Intersect(const Ray &ray, Intersection &intersection) const {
-  if (!m_BoundingBox.Intersect(ray)) {
+  float tmin, tmax;
+  if (!m_BoundingBox.Intersect(ray, tmin, tmax)) {
     return false;
   }
 

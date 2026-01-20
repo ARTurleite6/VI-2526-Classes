@@ -25,6 +25,7 @@ public:
   }
 
   bool Intersect(const Ray &r, Intersection &i) const;
+  inline const BoundingBox &GetBoundingBox() const { return m_BoundingBox; }
 
   void AddTriangle(const Triangle &triangle) {
     m_Triangles.push_back(triangle);

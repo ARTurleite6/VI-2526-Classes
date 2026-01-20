@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Math/RGB.hpp"
-#include <Math/Vector.hpp>
+#include "Math/Vector.hpp"
 
 namespace VI {
 
 class Material;
+
 class BRDF {
 public:
   virtual ~BRDF() = default;

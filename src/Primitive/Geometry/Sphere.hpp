@@ -14,6 +14,7 @@ public:
         m_BoundingBox(center - radius, center + radius) {}
 
   bool Intersect(const Ray &r, Intersection &i) const;
+  inline const BoundingBox &GetBoundingBox() const { return m_BoundingBox; }
 
 private:
   Point m_Center;

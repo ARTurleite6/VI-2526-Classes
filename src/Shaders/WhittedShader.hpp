@@ -5,19 +5,32 @@
 
 namespace VI {
 
+struct Ray;
+struct Intersection;
 class Scene;
 class Camera;
 
-class WhittedShader final : public Shader {
+class WhittedShader final {
 public:
   WhittedShader(const RGB &background_color)
       : m_BackgroundColor(background_color) {}
 
-  RGB Execute(int x, int y, const Scene &scene,
-              const Camera &camera) const override;
+  RGB Execute(int x, int y, const Scene &scene, const Camera &camera) const;
 
 private:
+  RGB DoExecute(const Ray &ray, const Scene &scene, const Camera &camera,
+                const Intersection &intersection, int depth = 0) const;
+
+  RGB DirectIllumination(const Scene &scene,
+                         const Intersection &intersection) const;
+
+  RGB IndirectIllumination(const Ray &ray, const Scene &scene,
+                           const Camera &camera,
+                           const Intersection &intersection, int depth) const;
+
   RGB m_BackgroundColor;
 };
+
+static_assert(Shader<WhittedShader>);
 
 } // namespace VI

@@ -21,7 +21,6 @@ add_executable(VI-RT src/main.cpp
 
     # Renderer
     src/Renderer/Renderer.hpp
-    src/Renderer/Renderer.cpp
 
     # Image
     src/Image/Image.hpp
@@ -52,6 +51,11 @@ add_executable(VI-RT src/main.cpp
     src/Primitive/Geometry/Triangle.cpp
     src/Primitive/Geometry/Mesh.hpp
     src/Primitive/Geometry/Mesh.cpp
+
+    src/Primitive/AccelerationStructures/AccelerationStructure.hpp
+
+    src/Primitive/AccelerationStructures/GridAccelerationStructure.hpp
+    src/Primitive/AccelerationStructures/GridAccelerationStructure.cpp
 
     # Lights
     src/Light/Light.hpp

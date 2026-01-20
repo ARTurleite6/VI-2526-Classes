@@ -5,7 +5,8 @@
 
 namespace VI {
 bool Mesh::Intersect(const Ray &r, Intersection &intersection) const {
-  if (!m_BoundingBox.Intersect(r)) {
+  float tmin, tmax;
+  if (!m_BoundingBox.Intersect(r, tmin, tmax)) {
     return false;
   }
 

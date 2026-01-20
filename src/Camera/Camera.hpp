@@ -15,7 +15,7 @@ public:
 
   Ray GenerateRay(int x, int y, glm::vec2 jitter = {0.5f, 0.5f}) const;
 
-  inline Resolution GetResolution() const {
+  inline Resolution GetResolution() const noexcept {
     return {static_cast<float>(m_Width), static_cast<float>(m_Height)};
   }
 

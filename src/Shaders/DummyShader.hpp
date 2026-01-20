@@ -5,7 +5,7 @@
 #include "Shaders/Shader.hpp"
 
 namespace VI {
-class DummyShader final : public Shader {
+class DummyShader final {
 public:
   RGB Execute(int x, int y, const Scene &scene [[maybe_unused]],
               const Camera &camera) const {

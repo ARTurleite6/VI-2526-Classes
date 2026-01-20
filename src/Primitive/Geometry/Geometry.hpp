@@ -9,11 +9,11 @@ namespace VI {
 struct Ray;
 struct Intersection;
 
-// TODO: check if this should be a variant or if we should just have an
-// array for each type of shape on the Scene.
 using Geometry = std::variant<Sphere, Triangle, Mesh>;
 
 bool Intersect(const Geometry &geom, const Ray &ray,
                Intersection &intersection);
+
+BoundingBox GetBoundingBox(const Geometry &geom);
 
 } // namespace VI

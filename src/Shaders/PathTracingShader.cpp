@@ -9,8 +9,7 @@
 #include "Scene/Scene.hpp"
 
 namespace VI {
-constexpr float MAX_DEPTH = 5;
-constexpr int SAMPLES_PER_PIXEL = 32;
+constexpr float MAX_DEPTH = 10;
 
 inline float max3(const Vector &v) { return std::max(v.x, std::max(v.y, v.z)); }
 
@@ -26,69 +25,85 @@ inline float GetSpecularProbability(const Material &material) {
 RGB PathTracingShader::Execute(int x, int y, const Scene &scene,
                                const Camera &camera) const {
 
-  RGB color{0.f};
+  auto jitter = Random::RandomVec3(0, 1);
+  auto ray = camera.GenerateRay(x, y, jitter);
 
+  Intersection intersection{};
+  if (scene.Trace(ray, intersection)) {
+    return DoExecute(ray, scene, camera, intersection);
+  }
+
+  return RGB{0.4f};
+}
+
+RGB PathTracingShader::DoExecute(const Ray &ray [[maybe_unused]],
+                                 const Scene &scene [[maybe_unused]],
+                                 const Camera &camera [[maybe_unused]],
+                                 const Intersection &intersection,
+                                 int depth) const {
+
+  if (depth > MAX_DEPTH)
+    return RGB{0.f};
+
+  return IndirectIllumination(ray, scene, camera, intersection, depth);
+}
+
+RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
+                                            const Camera &camera,
+                                            const Intersection &intersection,
+                                            int depth) const {
+  RGB color{0.0f};
   LambertianBRDF lambertian;
   MicrofacetBRDF microfacet;
 
-  for (int spp = 0; spp < SAMPLES_PER_PIXEL; spp++) {
-    RGB sample_color{0.f};
-    RGB contribution{1.f};
+  auto &object = scene.GetPrimitive(intersection.ObjectIndex);
+  auto &material = scene.GetMaterial(object.MaterialIndex);
 
-    auto jitter = Random::RandomVec3(0, 1);
-    auto ray = camera.GenerateRay(x, y, jitter);
-    for (int depth = 0; depth < MAX_DEPTH; depth++) {
-      Intersection intersection{};
-      if (!scene.Trace(ray, intersection)) {
-        sample_color += Vector{0.2, 0.2, 0.2} * contribution;
-        break;
-      }
+  color += material.GetEmissionColor() * material.GetRadiance();
 
-      auto &object = scene.GetPrimitive(intersection.ObjectIndex);
-      auto &material = scene.GetMaterial(object.MaterialIndex);
+  OrthonormalBasis basis{intersection.Normal};
+  Vector wo_world = -ray.Direction;
+  Vector wo_local = basis.WorldToLocal(wo_world);
 
-      sample_color += contribution * material.GetEmissionColor() *
-                      material.GetEmissionPower();
+  float specular_weight = GetSpecularProbability(material);
+  float diffuse_weight = 1.0f - specular_weight;
 
-      OrthonormalBasis basis{intersection.Normal};
-      Vector wo_world = -ray.Direction;
-      Vector wo_local = basis.WorldToLocal(wo_world);
+  Vector wi_local;
+  float pdf = 0.0f;
+  RGB brdf;
 
-      float specular_weight = GetSpecularProbability(material);
-      float diffuse_weight = 1.0f - specular_weight;
-
-      Vector wi_local;
-      float pdf = 0.0f;
-      RGB brdf;
-
-      if (Random::RandomFloat(0, 1) < diffuse_weight) {
-        wi_local = lambertian.Sample(wo_local, material);
-        float pdf_l = lambertian.PDF(wo_local, wi_local, material);
-        float pdf_s = microfacet.PDF(wo_local, wi_local, material);
-        pdf = diffuse_weight * pdf_l + specular_weight * pdf_s;
-        brdf = lambertian.Evaluate(wo_local, wi_local, material);
-      } else {
-        wi_local = microfacet.Sample(wo_local, material);
-        float pdf_l = lambertian.PDF(wo_local, wi_local, material);
-        float pdf_s = microfacet.PDF(wo_local, wi_local, material);
-        pdf = diffuse_weight * pdf_l + specular_weight * pdf_s;
-        brdf = microfacet.Evaluate(wo_local, wi_local, material);
-      }
-
-      if (pdf <= 0.0f || glm::isnan(pdf) || wi_local.z <= 0) {
-        break;
-      }
-
-      Vector wi_world = basis.LocalToWorld(wi_local);
-      contribution *= brdf * wi_local.z / pdf;
-
-      ray =
-          Ray::WithOffset(intersection.Position, wi_world, intersection.Normal);
-    }
-
-    color += sample_color;
+  if (Random::RandomFloat(0, 1) < diffuse_weight) {
+    wi_local = lambertian.Sample(wo_local, material);
+    float pdf_l = lambertian.PDF(wo_local, wi_local, material);
+    float pdf_s = microfacet.PDF(wo_local, wi_local, material);
+    pdf = diffuse_weight * pdf_l + specular_weight * pdf_s;
+    brdf = lambertian.Evaluate(wo_local, wi_local, material);
+  } else {
+    wi_local = microfacet.Sample(wo_local, material);
+    float pdf_l = lambertian.PDF(wo_local, wi_local, material);
+    float pdf_s = microfacet.PDF(wo_local, wi_local, material);
+    pdf = diffuse_weight * pdf_l + specular_weight * pdf_s;
+    brdf = microfacet.Evaluate(wo_local, wi_local, material);
   }
 
-  return color / static_cast<float>(SAMPLES_PER_PIXEL);
+  if (pdf <= 0.0f || glm::isnan(pdf) || wi_local.z <= 0) {
+    return RGB{0.f};
+  }
+
+  Vector wi_world = basis.LocalToWorld(wi_local);
+
+  Ray scattered_ray =
+      Ray::WithOffset(intersection.Position, wi_world, intersection.Normal);
+
+  Intersection scatter_intersection{};
+  if (scene.Trace(scattered_ray, scatter_intersection)) {
+    RGB rcolor = DoExecute(scattered_ray, scene, camera, scatter_intersection,
+                           depth + 1);
+
+    color += (brdf * wi_local.z * rcolor) / pdf;
+  }
+
+  return color;
 }
+
 } // namespace VI

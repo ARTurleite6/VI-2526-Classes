@@ -5,7 +5,6 @@
 #include "Scene/Scene.hpp"
 #include "Scene/SceneBuilder.hpp"
 #include "Shaders/AmbientShader.hpp"
-#include "Shaders/DummyShader.hpp"
 #include "Shaders/PathTracingShader.hpp"
 #include "Shaders/WhittedShader.hpp"
 
@@ -24,8 +23,7 @@ int main() {
   constexpr float fovH = 60.f;
   constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  DummyShader shader;
-  PathTracingShader whitted_shader{};
+  PathTracingShader pathtracing_shader{};
 
   Scene scene = CreateCornellBox();
 
@@ -35,8 +33,9 @@ int main() {
                   .MaterialIndex = point_light,
                   .Type = LightType::Point});
 
+  scene.Build();
   Renderer renderer;
-  const auto image = renderer.Render(scene, camera, whitted_shader);
+  const auto image = renderer.Render(scene, camera, pathtracing_shader);
 
   ImagePPM::Save(image, "image.ppm");
 

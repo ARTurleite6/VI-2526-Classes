@@ -19,6 +19,7 @@ public:
   }
 
   bool Intersect(const Ray &r, Intersection &i) const;
+  inline const BoundingBox &GetBoundingBox() const { return m_BoundingBox; }
 
   std::tuple<Point, Point, Point> GetVertices() const {
     return std::make_tuple(m_V1, m_V2, m_V3);

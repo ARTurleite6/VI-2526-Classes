@@ -36,58 +36,57 @@ struct BoundingBox {
     }
   }
 
-  constexpr bool Intersect(const Ray &ray) const {
-    float t0 = 0.f, t1 = std::numeric_limits<float>::max();
-    float inv_ray_dir, t_near, t_far;
-    // XX slabs
-    inv_ray_dir = (ray.Direction.x != 0.f ? 1.f / ray.Direction.x : 1.e5);
-    // invRayDir = r.invDir.X;
-    t_near = (Min.x - ray.Origin.x) * inv_ray_dir;
-    t_far = (Max.x - ray.Origin.x) * inv_ray_dir;
-    if (t_near > t_far) {
-      float aux = t_near;
-      t_near = t_far;
-      t_far = aux;
-    }
-    t_far *= 1 + 2 * gamma(3);
-    t0 = t_near > t0 ? t_near : t0;
-    t1 = t_far < t1 ? t_far : t1;
-    if (t0 > t1)
+  constexpr bool Intersect(const Ray &ray, float &tmin, float &tmax) const {
+    tmin = 0.f;
+    tmax = std::numeric_limits<float>::max();
+
+    // X slab
+    float inv_ray_dir =
+        (ray.Direction.x != 0.f ? 1.f / ray.Direction.x : 1.e5f);
+    float t0x = (Min.x - ray.Origin.x) * inv_ray_dir;
+    float t1x = (Max.x - ray.Origin.x) * inv_ray_dir;
+    if (t0x > t1x)
+      std::swap(t0x, t1x);
+    t1x *= 1 + 2 * gamma(3);
+    tmin = std::max(tmin, t0x);
+    tmax = std::min(tmax, t1x);
+    if (tmin > tmax)
       return false;
-    // YY slabs
-    // invRayDir = 1 / r.dir.Y;
-    inv_ray_dir = (ray.Direction.y != 0.f ? 1.f / ray.Direction.y : 1.e5);
-    // invRayDir = r.invDir.Y;
-    t_near = (Min.y - ray.Origin.y) * inv_ray_dir;
-    t_far = (Max.y - ray.Origin.y) * inv_ray_dir;
-    if (t_near > t_far) {
-      float aux = t_near;
-      t_near = t_far;
-      t_far = aux;
-    }
-    t_far *= 1 + 2 * gamma(3);
-    t0 = t_near > t0 ? t_near : t0;
-    t1 = t_far < t1 ? t_far : t1;
-    if (t0 > t1)
+
+    // Y slab
+    inv_ray_dir = (ray.Direction.y != 0.f ? 1.f / ray.Direction.y : 1.e5f);
+    float t0y = (Min.y - ray.Origin.y) * inv_ray_dir;
+    float t1y = (Max.y - ray.Origin.y) * inv_ray_dir;
+    if (t0y > t1y)
+      std::swap(t0y, t1y);
+    t1y *= 1 + 2 * gamma(3);
+    tmin = std::max(tmin, t0y);
+    tmax = std::min(tmax, t1y);
+    if (tmin > tmax)
       return false;
-    // ZZ slabs
-    // invRayDir = 1 / r.dir.Z;
-    inv_ray_dir = (ray.Direction.z != 0.f ? 1.f / ray.Direction.z : 1.e5);
-    // invRayDir = r.invDir.Z;
-    t_near = (Min.z - ray.Origin.z) * inv_ray_dir;
-    t_far = (Max.z - ray.Origin.z) * inv_ray_dir;
-    if (t_near > t_far) {
-      float aux = t_near;
-      t_near = t_far;
-      t_far = aux;
-    }
-    t_far *= 1 + 2 * gamma(3);
-    t0 = t_near > t0 ? t_near : t0;
-    t1 = t_far < t1 ? t_far : t1;
-    if (t0 > t1)
+
+    // Z slab
+    inv_ray_dir = (ray.Direction.z != 0.f ? 1.f / ray.Direction.z : 1.e5f);
+    float t0z = (Min.z - ray.Origin.z) * inv_ray_dir;
+    float t1z = (Max.z - ray.Origin.z) * inv_ray_dir;
+    if (t0z > t1z)
+      std::swap(t0z, t1z);
+    t1z *= 1 + 2 * gamma(3);
+    tmin = std::max(tmin, t0z);
+    tmax = std::min(tmax, t1z);
+    if (tmin > tmax)
       return false;
 
     return true;
+  }
+
+  constexpr void Update(const BoundingBox &other) {
+    Min.x = glm::min(Min.x, other.Min.x);
+    Min.y = glm::min(Min.y, other.Min.y);
+    Min.z = glm::min(Min.z, other.Min.z);
+    Max.x = glm::max(Max.x, other.Max.x);
+    Max.y = glm::max(Max.y, other.Max.y);
+    Max.z = glm::max(Max.z, other.Max.z);
   }
 };
 } // namespace VI

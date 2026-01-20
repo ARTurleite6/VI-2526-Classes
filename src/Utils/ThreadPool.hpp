@@ -5,6 +5,10 @@ namespace VI {
 class ThreadPool final {
 public:
   explicit ThreadPool(size_t num_threads = std::thread::hardware_concurrency());
+  ThreadPool(const ThreadPool &) = delete;
+  ThreadPool(ThreadPool &&) = delete;
+  ThreadPool &operator=(const ThreadPool &) = delete;
+  ThreadPool &operator=(ThreadPool &&) = delete;
   ~ThreadPool();
 
   template <class F, class... Args>
