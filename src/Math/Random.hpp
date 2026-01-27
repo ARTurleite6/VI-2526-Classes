@@ -10,6 +10,6 @@ public:
   static Point RandomInUnitDisk();
 
 private:
-  static std::mt19937 s_Rng;
+  static thread_local std::mt19937 s_Rng;
 };
 } // namespace VI

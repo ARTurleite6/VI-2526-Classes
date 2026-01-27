@@ -44,44 +44,109 @@ float LambertianBRDF::PDF(const Vector &wo_local [[maybe_unused]],
   return wi_local.z / glm::pi<float>();
 }
 
-RGB MicrofacetBRDF::Sample(const Vector &wo_local,
-                           const Material &material) const {
-  Vector h = SampleGGX(material.GetRoughness());
+Vector MicrofacetBRDF::Sample(const Vector &wo_local,
+                              const Material &material) const {
+  if (wo_local.z <= 0.0f)
+    return Vector{0.0f};
 
-  return glm::reflect(-wo_local, h);
+  float roughness = glm::max(material.GetRoughness(), MIN_ROUGHNESS);
+  float a = roughness * roughness;
+
+  Vector h = SampleGGX_VNDF(wo_local, a);
+  Vector wi_local = glm::reflect(-wo_local, h);
+
+  if (wi_local.z <= 0.0f)
+    return Vector{0.0f};
+
+  return wi_local;
 }
 
 RGB MicrofacetBRDF::Evaluate(const Vector &wo_local, const Vector &wi_local,
                              const Material &material) const {
-  float NoL = wi_local.z;
   float NoV = wo_local.z;
+  float NoL = wi_local.z;
 
-  if (NoL <= 0.0f || NoV <= 0.0f) {
+  if (NoV <= 0.0f || NoL <= 0.0f)
     return RGB{0.0f};
-  }
 
   Vector h = glm::normalize(wo_local + wi_local);
-  float NoH = h.z;
-  float VoH = glm::dot(wo_local, h);
+  float NoH = glm::max(h.z, 0.0f);
+  float VoH = glm::max(glm::dot(wo_local, h), 0.0f);
 
-  float D = D_GGX(NoH, material.GetRoughness());
+  float roughness = glm::max(material.GetRoughness(), MIN_ROUGHNESS);
+  float a = roughness * roughness;
 
-  float G = G_Smith(NoV, NoL, material.GetRoughness());
-  Vector F0 =
-      glm::mix(RGB{0.04f}, material.GetAlbedo(), material.GetMetallic());
-  Vector F = Fresnel_Schlick(VoH, F0);
+  float D = D_GGX(NoH, a);
+  float G = G_Smith(NoV, NoL, a);
 
-  return D * G * F / (4.0f * NoV * NoL);
+  RGB F0 = glm::mix(RGB{0.04f}, material.GetAlbedo(), material.GetMetallic());
+  RGB F = Fresnel_Schlick(VoH, F0);
+
+  return (D * G * F) / (4.0f * NoV * NoL);
 }
 
 float MicrofacetBRDF::PDF(const Vector &wo_local, const Vector &wi_local,
                           const Material &material) const {
-  float roughness = glm::max(material.GetRoughness(), MIN_ROUGHNESS);
+  if (wo_local.z <= 0.0f || wi_local.z <= 0.0f)
+    return 0.0f;
+
   Vector h = glm::normalize(wo_local + wi_local);
-  float nh = glm::max(h.z, 1e-4f);
-  float voh = glm::max(glm::dot(wo_local, h), 1e-4f);
-  float D = D_GGX(nh, roughness);
-  return glm::max(D * nh / (4.0f * voh), 1e-6f);
+
+  float NoH = glm::max(h.z, 0.0f);
+  float VoH = glm::max(glm::dot(wo_local, h), 1e-4f);
+  float NoV = glm::max(wo_local.z, 1e-4f);
+
+  float roughness = glm::max(material.GetRoughness(), MIN_ROUGHNESS);
+  float a = roughness * roughness;
+
+  float D = D_GGX(NoH, a);
+  float G1 = G1_Smith(NoV, a);
+
+  // VNDF PDF
+  return (D * G1 * VoH) / NoV;
+}
+
+float MicrofacetBRDF::G1_Smith(float NoX, float a) const {
+  float a2 = a * a;
+  float denom = NoX + glm::sqrt(a2 + (1.0f - a2) * NoX * NoX);
+  return (2.0f * NoX) / denom;
+}
+
+float MicrofacetBRDF::G_Smith(float NoV, float NoL, float a) const {
+  return G1_Smith(NoV, a) * G1_Smith(NoL, a);
+}
+
+RGB MicrofacetBRDF::Fresnel_Schlick(float cosTheta, const RGB &F0) const {
+  return F0 + (RGB{1.0f} - F0) * glm::pow(1.0f - cosTheta, 5.0f);
+}
+
+Vector MicrofacetBRDF::SampleGGX_VNDF(const Vector &wo, float a) const {
+  // Stretch view
+  Vector V = glm::normalize(Vector(a * wo.x, a * wo.y, wo.z));
+
+  // Orthonormal basis
+  float lensq = V.x * V.x + V.y * V.y;
+  Vector T1 = lensq > 0.0f ? Vector(-V.y, V.x, 0.0f) / glm::sqrt(lensq)
+                           : Vector(1.0f, 0.0f, 0.0f);
+  Vector T2 = glm::cross(V, T1);
+
+  float u1 = Random::RandomFloat(0.f, 1.f);
+  float u2 = Random::RandomFloat(0.f, 1.f);
+
+  float r = glm::sqrt(u1);
+  float phi = 2.0f * glm::pi<float>() * u2;
+  float t1 = r * glm::cos(phi);
+  float t2 = r * glm::sin(phi);
+
+  float s = 0.5f * (1.0f + V.z);
+  t2 = (1.0f - s) * glm::sqrt(glm::max(0.0f, 1.0f - t1 * t1)) + s * t2;
+
+  Vector H = t1 * T1 + t2 * T2 +
+             glm::sqrt(glm::max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * V;
+
+  // Unstretch
+  H = glm::normalize(Vector(a * H.x, a * H.y, glm::max(0.0f, H.z)));
+  return H;
 }
 
 float MicrofacetBRDF::D_GGX(float NoH, float roughness) const {
@@ -92,28 +157,4 @@ float MicrofacetBRDF::D_GGX(float NoH, float roughness) const {
   return a2 / (glm::pi<float>() * denom * denom);
 }
 
-RGB MicrofacetBRDF::Fresnel_Schlick(float cos_theta, const RGB &F0) const {
-  return F0 + (RGB{1.0f} - F0) * glm::pow(1.0f - cos_theta, 5.0f);
-}
-
-float MicrofacetBRDF::G_Smith(float NoV, float NoL, float roughness) const {
-  float a = glm::max(roughness, MIN_ROUGHNESS);
-  float k = a * 0.5f;
-  float nv = glm::clamp(NoV, 1e-4f, 1.0f);
-  float nl = glm::clamp(NoL, 1e-4f, 1.0f);
-  float G1V = nv / (nv * (1.0f - k) + k);
-  float G1L = nl / (nl * (1.0f - k) + k);
-  return G1V * G1L;
-}
-
-Vector MicrofacetBRDF::SampleGGX(float roughness) const {
-  float a = glm::max(roughness, MIN_ROUGHNESS);
-  float u1 = Random::RandomFloat(0.f, 1.f);
-  float u2 = Random::RandomFloat(0.f, 1.f);
-  float phi = 2.0f * glm::pi<float>() * u1;
-  float cos_theta = glm::sqrt((1.0f - u2) / (1.0f + (a * a - 1.0f) * u2));
-  float sin_theta = glm::sqrt(1.0f - cos_theta * cos_theta);
-  return Vector(sin_theta * glm::cos(phi), sin_theta * glm::sin(phi),
-                cos_theta);
-}
 } // namespace VI

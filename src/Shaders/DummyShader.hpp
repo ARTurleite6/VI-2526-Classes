@@ -5,13 +5,19 @@
 #include "Shaders/Shader.hpp"
 
 namespace VI {
+struct Ray;
+
 class DummyShader final {
 public:
-  RGB Execute(int x, int y, const Scene &scene [[maybe_unused]],
-              const Camera &camera) const {
-    auto [width, height] = camera.GetResolution();
+  DummyShader(int width, int height): m_Width{width}, m_Height{height} {}
 
-    return {x / width, y / height, 0.f};
+  RGB Execute(const Ray &ray [[maybe_unused]], const Scene &scene [[maybe_unused]]) const {
+    return {ray.Direction.x / m_Width, ray.Direction.y / m_Height, 0.f};
   }
+
+private:
+  int m_Width, m_Height;
 };
+
+static_assert(Shader<DummyShader>);
 } // namespace VI

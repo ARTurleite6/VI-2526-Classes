@@ -1,16 +1,12 @@
 #include "Shaders/AmbientShader.hpp"
 
-#include "Camera/Camera.hpp"
 #include "Math/RGB.hpp"
 #include "Primitive/Primitive.hpp"
 #include "Ray/Intersection.hpp"
 #include "Scene/Scene.hpp"
 
 namespace VI {
-RGB AmbientShader::Execute(int x, int y, const Scene &scene,
-                           const Camera &camera) const {
-  Ray ray = camera.GenerateRay(x, y);
-
+RGB AmbientShader::Execute(const Ray &ray, const Scene &scene) const {
   Intersection intersection{};
   if (!scene.Trace(ray, intersection)) {
     return m_BackgroundColor;

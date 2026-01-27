@@ -7,13 +7,14 @@ namespace VI {
 
 class Scene;
 class Camera;
+struct Ray;
 
 class AmbientShader final {
 public:
   AmbientShader(const RGB &background_color)
       : m_BackgroundColor(background_color) {}
 
-  RGB Execute(int x, int y, const Scene &scene, const Camera &camera) const;
+  RGB Execute(const Ray &ray, const Scene &scene) const;
 
 private:
   RGB m_BackgroundColor;

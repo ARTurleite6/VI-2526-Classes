@@ -35,7 +35,7 @@ int main() {
 
   scene.Build();
   Renderer renderer;
-  const auto image = renderer.Render(scene, camera, pathtracing_shader);
+  const auto image = renderer.Render(scene, camera, pathtracing_shader, 256, true);
 
   ImagePPM::Save(image, "image.ppm");
 

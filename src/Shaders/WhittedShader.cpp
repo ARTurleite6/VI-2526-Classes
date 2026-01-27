@@ -1,6 +1,5 @@
 #include "Shaders/WhittedShader.hpp"
 
-#include "Camera/Camera.hpp"
 #include "Math/Math.hpp"
 #include "Math/RGB.hpp"
 #include "Math/Vector.hpp"
@@ -12,20 +11,16 @@ namespace VI {
 
 constexpr float MAX_DEPTH = 5;
 
-RGB WhittedShader::Execute(int x, int y, const Scene &scene,
-                           const Camera &camera) const {
-  Ray ray = camera.GenerateRay(x, y);
-
+RGB WhittedShader::Execute(const Ray &ray, const Scene &scene) const {
   Intersection intersection{};
   if (scene.Trace(ray, intersection)) {
-    return DoExecute(ray, scene, camera, intersection);
+    return DoExecute(ray, scene, intersection);
   }
 
   return m_BackgroundColor;
 }
 
 RGB WhittedShader::DoExecute(const Ray &ray, const Scene &scene,
-                             const Camera &camera,
                              const Intersection &intersection,
                              int depth) const {
   if (depth > MAX_DEPTH) {
@@ -33,7 +28,7 @@ RGB WhittedShader::DoExecute(const Ray &ray, const Scene &scene,
   }
 
   return DirectIllumination(scene, intersection) +
-         IndirectIllumination(ray, scene, camera, intersection, depth + 1);
+         IndirectIllumination(ray, scene, intersection, depth + 1);
 }
 
 RGB WhittedShader::DirectIllumination(const Scene &scene,
@@ -75,7 +70,6 @@ RGB WhittedShader::DirectIllumination(const Scene &scene,
 }
 
 RGB WhittedShader::IndirectIllumination(const Ray &ray, const Scene &scene,
-                                        const Camera &camera,
                                         const Intersection &intersection,
                                         int depth) const {
   const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
@@ -94,7 +88,6 @@ RGB WhittedShader::IndirectIllumination(const Ray &ray, const Scene &scene,
     return RGB{0.0f};
   }
 
-  return DoExecute(scattered_ray, scene, camera, scattered_intersection,
-                   depth + 1);
+  return DoExecute(scattered_ray, scene, scattered_intersection, depth + 1);
 }
 } // namespace VI

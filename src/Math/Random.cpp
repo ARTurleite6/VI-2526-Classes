@@ -26,6 +26,6 @@ Point Random::RandomInUnitDisk() {
   }
 }
 
-std::mt19937 Random::s_Rng;
+thread_local std::mt19937 Random::s_Rng;
 
 } // namespace VI

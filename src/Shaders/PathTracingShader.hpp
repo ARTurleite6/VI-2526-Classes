@@ -8,14 +8,13 @@ struct Intersection;
 
 class PathTracingShader final {
 public:
-  RGB Execute(int x, int y, const Scene &scene, const Camera &camera) const;
+  RGB Execute(const Ray &ray, const Scene &scene) const;
 
 private:
-  RGB DoExecute(const Ray &ray, const Scene &scene, const Camera &camera,
+  RGB DoExecute(const Ray &ray, const Scene &scene,
                 const Intersection &intersection, int depth = 0) const;
 
   RGB IndirectIllumination(const Ray &ray, const Scene &scene,
-                           const Camera &camera,
                            const Intersection &intersection, int depth) const;
 };
 

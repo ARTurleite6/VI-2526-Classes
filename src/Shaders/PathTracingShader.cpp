@@ -1,6 +1,5 @@
 #include "Shaders/PathTracingShader.hpp"
 
-#include "Camera/Camera.hpp"
 #include "Math/Math.hpp"
 #include "Math/RGB.hpp"
 #include "Math/Random.hpp"
@@ -22,15 +21,10 @@ inline float GetSpecularProbability(const Material &material) {
   return glm::mix(baseProb, baseProb * 0.5f, roughnessInfluence);
 }
 
-RGB PathTracingShader::Execute(int x, int y, const Scene &scene,
-                               const Camera &camera) const {
-
-  auto jitter = Random::RandomVec3(0, 1);
-  auto ray = camera.GenerateRay(x, y, jitter);
-
+RGB PathTracingShader::Execute(const Ray &ray, const Scene &scene) const {
   Intersection intersection{};
   if (scene.Trace(ray, intersection)) {
-    return DoExecute(ray, scene, camera, intersection);
+    return DoExecute(ray, scene, intersection);
   }
 
   return RGB{0.4f};
@@ -38,18 +32,16 @@ RGB PathTracingShader::Execute(int x, int y, const Scene &scene,
 
 RGB PathTracingShader::DoExecute(const Ray &ray [[maybe_unused]],
                                  const Scene &scene [[maybe_unused]],
-                                 const Camera &camera [[maybe_unused]],
                                  const Intersection &intersection,
                                  int depth) const {
 
   if (depth > MAX_DEPTH)
     return RGB{0.f};
 
-  return IndirectIllumination(ray, scene, camera, intersection, depth);
+  return IndirectIllumination(ray, scene, intersection, depth);
 }
 
 RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
-                                            const Camera &camera,
                                             const Intersection &intersection,
                                             int depth) const {
   RGB color{0.0f};
@@ -97,8 +89,8 @@ RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
 
   Intersection scatter_intersection{};
   if (scene.Trace(scattered_ray, scatter_intersection)) {
-    RGB rcolor = DoExecute(scattered_ray, scene, camera, scatter_intersection,
-                           depth + 1);
+    RGB rcolor =
+        DoExecute(scattered_ray, scene, scatter_intersection, depth + 1);
 
     color += (brdf * wi_local.z * rcolor) / pdf;
   }
