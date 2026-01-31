@@ -27,7 +27,7 @@ private:
   RGB IndirectIllumination(const Ray &ray, const Scene &scene,
                            const Intersection &intersection, int depth) const;
 
-  RGB m_BackgroundColor;
+  RGB m_BackgroundColor [[maybe_unused]];
 };
 
 static_assert(Shader<WhittedShader>);
