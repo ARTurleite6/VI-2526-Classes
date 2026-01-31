@@ -17,10 +17,12 @@ public:
   void Build(const Scene &scene) override;
 
 private:
-  std::vector<GridCell> m_Cells{};
-  int m_Nx{0}, m_Ny{0}, m_Nz{0};
-  BoundingBox m_BoundingBox{};
-  float m_CellSizeX{0.0f}, m_CellSizeY{0.0f}, m_CellSizeZ{0.0f};
+  std::vector<GridCell> m_Cells [[maybe_unused]]{};
+  int m_Nx [[maybe_unused]]{0}, m_Ny [[maybe_unused]]{0},
+      m_Nz [[maybe_unused]]{0};
+  BoundingBox m_BoundingBox [[maybe_unused]]{};
+  float m_CellSizeX [[maybe_unused]]{0.0f}, m_CellSizeY [[maybe_unused]]{0.0f},
+      m_CellSizeZ [[maybe_unused]]{0.0f};
 };
 
 } // namespace VI

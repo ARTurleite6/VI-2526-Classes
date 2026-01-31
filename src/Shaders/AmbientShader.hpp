@@ -17,7 +17,7 @@ public:
   RGB Execute(const Ray &ray, const Scene &scene) const;
 
 private:
-  RGB m_BackgroundColor;
+  RGB m_BackgroundColor [[maybe_unused]];
 };
 
 static_assert(Shader<AmbientShader>);
