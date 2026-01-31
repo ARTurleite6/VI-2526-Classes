@@ -1,11 +1,11 @@
 #include "Camera/Camera.hpp"
 #include "Image/FileImages.hpp"
 #include "Math/Vector.hpp"
+#include "Renderer/DummyRenderer.hpp"
 #include "Renderer/Renderer.hpp"
 #include "Scene/Scene.hpp"
 #include "Scene/SceneBuilder.hpp"
 #include "Shaders/AmbientShader.hpp"
-#include "Shaders/PathTracingShader.hpp"
 #include "Shaders/WhittedShader.hpp"
 
 using namespace VI;
@@ -23,19 +23,10 @@ int main() {
   constexpr float fovH = 60.f;
   constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  PathTracingShader pathtracing_shader{};
-
   Scene scene = CreateCornellBox();
 
-  int point_light = scene.AddMaterial(
-      {"Point Light", {0.f, 0.f, 0.f}, 1, 0, {1.f, 1.f, 1.f}, 10.0f});
-  scene.AddLight({.Position = {200, 520.0, 200},
-                  .MaterialIndex = point_light,
-                  .Type = LightType::Point});
-
-  scene.Build();
-  Renderer renderer;
-  const auto image = renderer.Render(scene, camera, pathtracing_shader, 256, true);
+  DummyRenderer renderer;
+  const auto image = renderer.Render(scene, camera);
 
   ImagePPM::Save(image, "image.ppm");
 

@@ -12,15 +12,14 @@ add_executable(VI-RT src/main.cpp
     src/Utils/ProgressBar.hpp
     src/Utils/ProgressBar.cpp
 
-    src/Utils/ThreadPool.hpp
-    src/Utils/ThreadPool.cpp
-
     # Ray
     src/Ray/Ray.hpp
     src/Ray/Intersection.hpp
 
     # Renderer
     src/Renderer/Renderer.hpp
+    src/Renderer/DummyRenderer.hpp
+    src/Renderer/DummyRenderer.cpp
 
     # Image
     src/Image/Image.hpp
