@@ -6,6 +6,7 @@
 #include "Scene/Scene.hpp"
 #include "Scene/SceneBuilder.hpp"
 #include "Shaders/AmbientShader.hpp"
+#include "Shaders/DummyShader.hpp"
 #include "Shaders/WhittedShader.hpp"
 
 using namespace VI;
@@ -25,8 +26,9 @@ int main() {
   Camera camera{Eye, At, Up, w, h, fovHrad};
   Scene scene = CreateCornellBox();
 
+  DummyShader shader{w, h};
   DummyRenderer renderer;
-  const auto image = renderer.Render(scene, camera);
+  const auto image = renderer.Render(scene, camera, shader);
 
   ImagePPM::Save(image, "image.ppm");
 

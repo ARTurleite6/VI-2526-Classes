@@ -19,7 +19,6 @@ add_executable(VI-RT src/main.cpp
     # Renderer
     src/Renderer/Renderer.hpp
     src/Renderer/DummyRenderer.hpp
-    src/Renderer/DummyRenderer.cpp
 
     # Image
     src/Image/Image.hpp
