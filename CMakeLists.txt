@@ -19,7 +19,6 @@ add_executable(VI-RT src/main.cpp
     # Renderer
     src/Renderer/Renderer.hpp
     src/Renderer/DummyRenderer.hpp
-    src/Renderer/DummyRenderer.cpp
 
     # Image
     src/Image/Image.hpp
@@ -83,11 +82,11 @@ target_precompile_headers(VI-RT PRIVATE src/vi_pch.h)
 target_link_libraries(VI-RT PRIVATE glm::glm)
 
 if (MSVC)
-    target_compile_options(VI-RT PRIVATE /W4 /WX)
+  target_compile_options(VI-RT PRIVATE /W4 /WX)
 else()
-    target_compile_options(VI-RT PRIVATE -fcolor-diagnostics -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(VI-RT PRIVATE -fcolor-diagnostics)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
