@@ -40,12 +40,13 @@ RGB WhittedShader::DirectIllumination(const Scene &scene,
   const Material &material = scene.GetMaterial(primitive.MaterialIndex);
 
   for (const auto &light : scene.GetLights()) {
-    const auto &light_material = scene.GetMaterial(light.MaterialIndex);
-
-    if (light.Type == LightType::Ambient) {
+    const auto &light_material = scene.GetMaterial(light->GetMaterialIndex());
+    auto light_type = light->GetType();
+    if (light_type == LightType::Ambient) {
       color += material.GetAlbedo() * light_material.GetRadiance();
-    } else if (light.Type == LightType::Point) {
-      const Vector light_position = light.Position;
+    } else if (light_type == LightType::Point) {
+      auto *point_light = static_cast<PointLight *>(light.get());
+      const Vector light_position = point_light->GetPosition();
       const Vector direction =
           glm::normalize(light_position - intersection.Position);
       const float light_distance =

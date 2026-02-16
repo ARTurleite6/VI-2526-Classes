@@ -29,13 +29,13 @@ int main() {
 
   int point_light = scene.AddMaterial(
       {"Point Light", {0.f, 0.f, 0.f}, 1, 0, {1.f, 1.f, 1.f}, 10.0f});
-  scene.AddLight({.Position = {200, 520.0, 200},
-                  .MaterialIndex = point_light,
-                  .Type = LightType::Point});
+  scene.AddLight(
+      std::make_unique<PointLight>(point_light, Point{200, 520.0, 200}));
 
   scene.Build();
   Renderer renderer;
-  const auto image = renderer.Render(scene, camera, pathtracing_shader, 256, true);
+  const auto image =
+      renderer.Render(scene, camera, pathtracing_shader, 256, true);
 
   ImagePPM::Save(image, "image.ppm");
 

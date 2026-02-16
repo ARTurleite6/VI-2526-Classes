@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Camera/Camera.hpp"
 #include "Scene/Scene.hpp"
 #include "Shaders/Shader.hpp"
 
@@ -9,9 +8,10 @@ struct Ray;
 
 class DummyShader final {
 public:
-  DummyShader(int width, int height): m_Width{width}, m_Height{height} {}
+  DummyShader(int width, int height) : m_Width{width}, m_Height{height} {}
 
-  RGB Execute(const Ray &ray [[maybe_unused]], const Scene &scene [[maybe_unused]]) const {
+  RGB Execute(const Ray &ray [[maybe_unused]],
+              const Scene &scene [[maybe_unused]]) const {
     return {ray.Direction.x / m_Width, ray.Direction.y / m_Height, 0.f};
   }
 

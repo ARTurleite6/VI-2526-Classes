@@ -7,6 +7,9 @@
 #include "Primitive/Material.hpp"
 #include "Primitive/Primitive.hpp"
 
+#include <memory>
+#include <type_traits>
+
 namespace VI {
 
 struct Ray;
@@ -31,10 +34,8 @@ public:
 
     auto &material = m_Materials[material_index];
     if (material.GetEmissionPower() > 0.f) {
-      m_Lights.emplace_back(
-          Light{.MaterialIndex = material_index,
-                .ObjectIndex = static_cast<int>(m_Primitives.size()),
-                .Type = LightType::Area});
+      m_Lights.emplace_back(std::make_unique<AreaLight>(
+          material_index, static_cast<int>(m_Primitives.size())));
     }
   }
 
@@ -43,7 +44,9 @@ public:
     return m_Materials.size() - 1;
   }
 
-  inline void AddLight(const Light &light) { m_Lights.emplace_back(light); }
+  inline void AddLight(std::unique_ptr<Light> light) {
+    m_Lights.emplace_back(std::move(light));
+  }
 
   inline const Primitive &GetPrimitive(int primitive_index) const {
     return m_Primitives[primitive_index];
@@ -53,7 +56,9 @@ public:
     return m_Materials[material_index];
   }
 
-  inline const std::vector<Light> &GetLights() const { return m_Lights; }
+  inline const std::vector<std::unique_ptr<Light>> &GetLights() const {
+    return m_Lights;
+  }
   inline size_t GetPrimitiveCount() const { return m_Primitives.size(); }
 
   BoundingBox ComputeBoundingBox() const;
@@ -61,7 +66,7 @@ public:
 private:
   std::vector<Primitive> m_Primitives{};
   std::vector<Material> m_Materials{};
-  std::vector<Light> m_Lights{};
+  std::vector<std::unique_ptr<Light>> m_Lights{};
   GridAccelerationStructure m_AccelerationStructure{};
 };
 } // namespace VI

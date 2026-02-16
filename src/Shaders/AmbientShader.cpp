@@ -18,9 +18,9 @@ RGB AmbientShader::Execute(const Ray &ray, const Scene &scene) const {
   RGB color{0.f};
 
   for (const auto &light : scene.GetLights()) {
-    const auto &light_material = scene.GetMaterial(light.MaterialIndex);
+    const auto &light_material = scene.GetMaterial(light->GetMaterialIndex());
 
-    if (light.Type == LightType::Ambient) {
+    if (light->GetType() == LightType::Ambient) {
       color += material.GetAlbedo() * light_material.GetRadiance();
     }
   }

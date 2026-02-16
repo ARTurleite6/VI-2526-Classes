@@ -30,8 +30,7 @@ RGB PathTracingShader::Execute(const Ray &ray, const Scene &scene) const {
   return RGB{0.4f};
 }
 
-RGB PathTracingShader::DoExecute(const Ray &ray [[maybe_unused]],
-                                 const Scene &scene [[maybe_unused]],
+RGB PathTracingShader::DoExecute(const Ray &ray, const Scene &scene,
                                  const Intersection &intersection,
                                  int depth) const {
 
