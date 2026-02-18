@@ -30,6 +30,7 @@ private:
 
 class AmbientLight : public Light {
 public:
+  explicit AmbientLight(int material_index) : Light{material_index} {}
   LIGHT_TYPE_CLASS(Ambient)
 };
 

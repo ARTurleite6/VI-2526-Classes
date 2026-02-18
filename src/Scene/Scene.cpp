@@ -1,5 +1,6 @@
 #include "Scene/Scene.hpp"
 
+#include "Math/Math.hpp"
 #include "Primitive/Geometry/Geometry.hpp"
 #include "Ray/Intersection.hpp"
 #include "Ray/Ray.hpp"
@@ -25,6 +26,17 @@ bool Scene::Trace(const Ray &ray, Intersection &intersection) const {
   }
 
   return intersection.Distance != -1;
+}
+
+bool Scene::Visibility(const Ray &ray, float max_distance) const {
+  for (const auto &primitive : m_Primitives) {
+    Intersection intersection{};
+    if (Intersect(primitive.Geometry, ray, intersection) &&
+        intersection.Distance < max_distance - EPSILON) {
+      return false;
+    }
+  }
+  return true;
 }
 
 BoundingBox Scene::ComputeBoundingBox() const {

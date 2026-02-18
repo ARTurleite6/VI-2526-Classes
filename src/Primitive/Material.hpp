@@ -5,16 +5,24 @@
 #include "Math/Vector.hpp"
 
 namespace VI {
+
+struct MaterialDesc {
+  std::string_view Name;
+  RGB Albedo{};
+  float Roughness = 1.f;
+  float Metallic = 0.f;
+  RGB EmissionColor{};
+  float EmissionPower = 0.f;
+  std::optional<Image> AlbedoImage = std::nullopt;
+};
+
 class Material {
 public:
-  constexpr Material(std::string_view name, const RGB &albedo, float roughness,
-                     float metallic, const RGB &emission_color = {},
-                     float emission_power = 0.f,
-                     std::optional<Image> albedo_image = std::nullopt)
-      : m_Name{name}, m_Albedo{albedo}, m_EmissionColor{emission_color},
-        m_Metallic{metallic}, m_Roughness{roughness},
-        m_EmissionPower{emission_power},
-        m_AlbedoTexture{std::move(albedo_image)} {}
+  constexpr Material(MaterialDesc desc)
+      : m_Name{desc.Name}, m_Albedo{desc.Albedo},
+        m_EmissionColor{desc.EmissionColor}, m_Metallic{desc.Metallic},
+        m_Roughness{desc.Roughness}, m_EmissionPower{desc.EmissionPower},
+        m_AlbedoTexture{std::move(desc.AlbedoImage)} {}
 
   const std::string &GetName() const { return m_Name; }
 

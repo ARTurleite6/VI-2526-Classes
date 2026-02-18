@@ -23,6 +23,9 @@ public:
 
   bool Trace(const Ray &ray, Intersection &intersection) const;
 
+  // Returns true if the path from ray origin to max_distance is unobstructed.
+  bool Visibility(const Ray &ray, float max_distance) const;
+
   // TODO: check this to check if we should receive geometry as value, l-value
   // or r-value
   void AddPrimitive(Geometry primitive, int material_index) {
@@ -39,8 +42,8 @@ public:
     }
   }
 
-  inline int AddMaterial(const Material &material) {
-    m_Materials.push_back(material);
+  inline int AddMaterial(MaterialDesc desc) {
+    m_Materials.emplace_back(std::move(desc));
     return m_Materials.size() - 1;
   }
 

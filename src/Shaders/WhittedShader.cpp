@@ -27,17 +27,18 @@ RGB WhittedShader::DoExecute(const Ray &ray, const Scene &scene,
     return RGB{0.0f};
   }
 
-  return DirectIllumination(scene, intersection) +
+  return DirectIllumination(ray, scene, intersection) +
          IndirectIllumination(ray, scene, intersection, depth + 1);
 }
 
-RGB WhittedShader::DirectIllumination(const Scene &scene,
+RGB WhittedShader::DirectIllumination(const Ray &ray, const Scene &scene,
                                       const Intersection &intersection) const {
 
   RGB color{0.0f};
 
   const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
   const Material &material = scene.GetMaterial(primitive.MaterialIndex);
+  Vector shading_normal = FaceForward(intersection.Normal, -ray.Direction);
 
   for (const auto &light : scene.GetLights()) {
     const auto &light_material = scene.GetMaterial(light->GetMaterialIndex());
@@ -52,14 +53,12 @@ RGB WhittedShader::DirectIllumination(const Scene &scene,
       const float light_distance =
           glm::length(light_position - intersection.Position);
 
-      if (const float cos_light = glm::dot(direction, intersection.Normal);
+      if (const float cos_light = glm::dot(direction, shading_normal);
           cos_light > 0) {
         const auto shadow_ray = Ray::WithOffset(intersection.Position,
                                                 direction, intersection.Normal);
 
-        Intersection shadow_intersection{};
-        if (!scene.Trace(shadow_ray, shadow_intersection) ||
-            shadow_intersection.Distance > light_distance - EPSILON) {
+        if (scene.Visibility(shadow_ray, light_distance)) {
           color +=
               cos_light * material.GetAlbedo() * light_material.GetRadiance();
         }
@@ -73,22 +72,23 @@ RGB WhittedShader::DirectIllumination(const Scene &scene,
 RGB WhittedShader::IndirectIllumination(const Ray &ray, const Scene &scene,
                                         const Intersection &intersection,
                                         int depth) const {
-  const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
-  const Material &material = scene.GetMaterial(primitive.MaterialIndex);
-
-  if (material.GetRoughness() == 0.0f) {
-    return RGB{0.0f};
-  }
-
-  const Vector reflected = glm::reflect(ray.Direction, intersection.Normal);
-  Ray scattered_ray =
-      Ray::WithOffset(intersection.Position, reflected, intersection.Normal);
-
-  Intersection scattered_intersection{};
-  if (scene.Trace(scattered_ray, scattered_intersection)) {
-    return RGB{0.0f};
-  }
-
-  return DoExecute(scattered_ray, scene, scattered_intersection, depth + 1);
+  return RGB{0.0f};
+  // const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
+  // const Material &material = scene.GetMaterial(primitive.MaterialIndex);
+  //
+  // if (material.GetRoughness() > 0.0f) {
+  //   return RGB{0.0f};
+  // }
+  //
+  // const Vector reflected = glm::reflect(ray.Direction, intersection.Normal);
+  // Ray scattered_ray =
+  //     Ray::WithOffset(intersection.Position, reflected, intersection.Normal);
+  //
+  // Intersection scattered_intersection{};
+  // if (!scene.Trace(scattered_ray, scattered_intersection)) {
+  //   return m_BackgroundColor;
+  // }
+  //
+  // return DoExecute(scattered_ray, scene, scattered_intersection, depth + 1);
 }
 } // namespace VI

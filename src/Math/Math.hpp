@@ -16,7 +16,11 @@ private:
 };
 
 constexpr Vector OffsetPoint(const Point &point, const Vector &normal,
-                             float epsilon = EPSILON) {
+                             float epsilon = EPSILON) noexcept {
   return point + epsilon * normal;
+}
+
+constexpr Vector FaceForward(const Vector &a, const Vector &b) noexcept {
+  return glm::dot(a, b) < 0 ? -a : a;
 }
 } // namespace VI

@@ -21,7 +21,7 @@ private:
   RGB DoExecute(const Ray &ray, const Scene &scene,
                 const Intersection &intersection, int depth = 0) const;
 
-  RGB DirectIllumination(const Scene &scene,
+  RGB DirectIllumination(const Ray &ray, const Scene &scene,
                          const Intersection &intersection) const;
 
   RGB IndirectIllumination(const Ray &ray, const Scene &scene,
