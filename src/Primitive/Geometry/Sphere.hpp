@@ -17,8 +17,8 @@ public:
   inline const BoundingBox &GetBoundingBox() const { return m_BoundingBox; }
 
 private:
-  Point m_Center [[maybe_unused]];
-  float m_Radius [[maybe_unused]];
-  BoundingBox m_BoundingBox [[maybe_unused]];
+  Point m_Center;
+  float m_Radius;
+  BoundingBox m_BoundingBox;
 };
 } // namespace VI

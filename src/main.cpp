@@ -17,17 +17,17 @@ int main() {
   constexpr int w = 800;
   constexpr int h = 600;
 
-  constexpr Point Eye = {280, 265, -500};
-  constexpr Point At = {280, 260, 0};
+  constexpr Point Eye = {0, 0, -5};
+  constexpr Point At = {0, 0, 3};
 
   constexpr Vector Up = {0, 1, 0};
   constexpr float fovH = 60.f;
   constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  Scene scene = CreateCornellBox();
+  Scene scene = SphereScene();
 
-  DummyShader shader{w, h};
-  DummyRenderer renderer;
+  AmbientShader shader{RGB{0.0f, 0.0f, 1.0f}};
+  Renderer renderer;
   const auto image = renderer.Render(scene, camera, shader);
 
   ImagePPM::Save(image, "image.ppm");

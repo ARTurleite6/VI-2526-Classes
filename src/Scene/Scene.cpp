@@ -8,7 +8,6 @@
 namespace VI {
 
 bool Scene::Trace(const Ray &ray, Intersection &intersection) const {
-  // return m_AccelerationStructure.Trace(ray, *this, intersection);
   intersection.Distance = -1;
 
   for (size_t i = 0; i < m_Primitives.size(); i++) {

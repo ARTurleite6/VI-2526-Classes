@@ -19,9 +19,8 @@ RGB WhittedShader::DoExecute(const Ray &ray [[maybe_unused]],
   return {};
 }
 
-RGB WhittedShader::DirectIllumination(const Scene &scene [[maybe_unused]],
-                                      const Intersection &intersection
-                                      [[maybe_unused]]) const {
+RGB WhittedShader::DirectIllumination(const Ray &ray, const Scene &scene,
+                         const Intersection &intersection) const {
   return {};
 }
 
