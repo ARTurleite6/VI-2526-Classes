@@ -9,6 +9,7 @@ struct Ray;
 struct Intersection;
 class Scene;
 class Camera;
+class Material;
 
 class WhittedShader final {
 public:
@@ -22,10 +23,10 @@ private:
                 const Intersection &intersection, int depth = 0) const;
 
   RGB DirectIllumination(const Ray &ray, const Scene &scene,
-                         const Intersection &intersection) const;
+                         const Intersection &intersection, const Material &material) const;
 
   RGB IndirectIllumination(const Ray &ray, const Scene &scene,
-                           const Intersection &intersection, int depth) const;
+                           const Intersection &intersection, const Material &material, int depth) const;
 
   RGB m_BackgroundColor [[maybe_unused]];
 };

@@ -41,7 +41,7 @@ Scene WhittedCornellBox() {
   const int wood_mat =
       scene.AddMaterial({.Name = "Wood", .Albedo = {0.52f, 0.30f, 0.10f}});
   const int mirror_mat =
-      scene.AddMaterial({.Name = "Mirror", .Roughness = 0.f, .Metallic = 1.f});
+      scene.AddMaterial({.Name = "Mirror", .Albedo = {1.f, 1.f, 1.f}, .Roughness = 0.f, .Metallic = 1.f});
 
   // Helper: generates all 12 triangles (6 faces) of an axis-aligned box
   auto make_box = [](float x1, float y1, float z1, float x2, float y2,

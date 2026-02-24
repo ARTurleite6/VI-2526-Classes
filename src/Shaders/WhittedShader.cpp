@@ -3,6 +3,7 @@
 #include "Math/Math.hpp"
 #include "Math/RGB.hpp"
 #include "Math/Vector.hpp"
+#include "Primitive/Material.hpp"
 #include "Ray/Intersection.hpp"
 #include "Ray/Ray.hpp"
 #include "Scene/Scene.hpp"
@@ -23,28 +24,36 @@ RGB WhittedShader::Execute(const Ray &ray, const Scene &scene) const {
 RGB WhittedShader::DoExecute(const Ray &ray, const Scene &scene,
                              const Intersection &intersection,
                              int depth) const {
+  RGB color = RGB{0.0f};
   if (depth > MAX_DEPTH) {
-    return RGB{0.0f};
+    return color;
   }
-
-  return DirectIllumination(ray, scene, intersection) +
-         IndirectIllumination(ray, scene, intersection, depth + 1);
-}
-
-RGB WhittedShader::DirectIllumination(const Ray &ray, const Scene &scene,
-                                      const Intersection &intersection) const {
-
-  RGB color{0.0f};
 
   const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
   const Material &material = scene.GetMaterial(primitive.MaterialIndex);
+
+  if (material.GetMetallic() > 0.f) {
+    color += IndirectIllumination(ray, scene, intersection, material, depth);
+  }
+
+  return color + DirectIllumination(ray, scene, intersection, material);
+}
+
+RGB WhittedShader::DirectIllumination(const Ray &ray, const Scene &scene,
+                                      const Intersection &intersection,
+                                      const Material &material) const {
+
+  RGB color{0.0f};
+
   Vector shading_normal = FaceForward(intersection.Normal, -ray.Direction);
+  const RGB diffuse_color =
+      material.GetAlbedo() * (1.f - material.GetMetallic());
 
   for (const auto &light : scene.GetLights()) {
     const auto &light_material = scene.GetMaterial(light->GetMaterialIndex());
     auto light_type = light->GetType();
     if (light_type == LightType::Ambient) {
-      color += material.GetAlbedo() * light_material.GetRadiance();
+      color += diffuse_color * light_material.GetRadiance();
     } else if (light_type == LightType::Point) {
       auto *point_light = static_cast<PointLight *>(light.get());
       const Vector light_position = point_light->GetPosition();
@@ -59,8 +68,7 @@ RGB WhittedShader::DirectIllumination(const Ray &ray, const Scene &scene,
                                                 direction, intersection.Normal);
 
         if (scene.Visibility(shadow_ray, light_distance)) {
-          color +=
-              cos_light * material.GetAlbedo() * light_material.GetRadiance();
+          color += cos_light * diffuse_color * light_material.GetRadiance();
         }
       }
     }
@@ -71,24 +79,25 @@ RGB WhittedShader::DirectIllumination(const Ray &ray, const Scene &scene,
 
 RGB WhittedShader::IndirectIllumination(const Ray &ray, const Scene &scene,
                                         const Intersection &intersection,
+                                        const Material &material,
                                         int depth) const {
-  return RGB{0.0f};
-  // const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
-  // const Material &material = scene.GetMaterial(primitive.MaterialIndex);
-  //
-  // if (material.GetRoughness() > 0.0f) {
-  //   return RGB{0.0f};
-  // }
-  //
-  // const Vector reflected = glm::reflect(ray.Direction, intersection.Normal);
-  // Ray scattered_ray =
-  //     Ray::WithOffset(intersection.Position, reflected, intersection.Normal);
-  //
-  // Intersection scattered_intersection{};
-  // if (!scene.Trace(scattered_ray, scattered_intersection)) {
-  //   return m_BackgroundColor;
-  // }
-  //
-  // return DoExecute(scattered_ray, scene, scattered_intersection, depth + 1);
+  const Vector shading_normal =
+      FaceForward(intersection.Normal, -ray.Direction);
+  const Vector reflected = glm::reflect(ray.Direction, shading_normal);
+  const float cos_theta =
+      glm::max(0.0f, glm::dot(shading_normal, -ray.Direction));
+  Ray scattered_ray =
+      Ray::WithOffset(intersection.Position, reflected, intersection.Normal);
+
+  const RGB r0 = material.GetAlbedo();
+  const RGB fresnel = r0 + (RGB{1.f} - r0) * glm::pow(1.f - cos_theta, 5.f);
+
+  Intersection scattered_intersection{};
+  if (!scene.Trace(scattered_ray, scattered_intersection)) {
+    return fresnel * m_BackgroundColor;
+  }
+
+  return fresnel *
+         DoExecute(scattered_ray, scene, scattered_intersection, depth + 1);
 }
 } // namespace VI
