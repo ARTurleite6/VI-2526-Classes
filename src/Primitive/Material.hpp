@@ -4,6 +4,37 @@
 #include "Math/RGB.hpp"
 #include "Math/Vector.hpp"
 
+/*
+ *  Characterization of the parameters in a material
+ *  Based mostly in the GGX BRDF
+ *
+ *  - roughness (also referred to as alpha) in [0 .. 1]:
+ *      Microfacet slope distribution
+ *      roughness -> 0 : sharp mirror reflections
+ *      roughness -> 1 : blurry highlights
+ *      NOTE: roughness does not control whether there is a diffuse component
+ *
+ *  - metallic in [0 .. 1]:
+ *      controls how much of the incident energy goes
+ *      to the specular reflection (the remaining goes to diffuse)
+ *      metallic -> 0 : mostly diffuse
+ *      metallic -> 1 : mostly specular
+ *
+ *  - albedo in [0..1]^3 (RGB):
+ *      diffuse color
+ *
+ *  - computing Kd (diffuse reflection coefficient)
+ *      Kd = (1-metallic)*albedo / PI
+ *  - computing F0
+ *      F0 = metallic*albedo
+ *
+ *  - for a Phong inspired illumination model (not-physically based):
+ *      fr = Kd cos (N.L) + Ks cos^n (R.V)
+ *      F0 can be used as Ks (or else compute F if time budget allows)
+ *      For the sharpness of the highlight (n) some empirical formula, e.g.
+ *          n = (1-roughness) * MAX_N
+ */
+
 namespace VI {
 
 struct MaterialDesc {
