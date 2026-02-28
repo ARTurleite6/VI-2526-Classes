@@ -38,7 +38,7 @@ public:
     auto &material = m_Materials[material_index];
     if (material.GetEmissionPower() > 0.f) {
       m_Lights.emplace_back(std::make_unique<AreaLight>(
-          material_index, static_cast<int>(m_Primitives.size())));
+          material_index, static_cast<int>(m_Primitives.size() - 1)));
     }
   }
 

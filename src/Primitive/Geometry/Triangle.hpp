@@ -24,6 +24,7 @@ public:
   std::tuple<Point, Point, Point> GetVertices() const {
     return std::make_tuple(m_V1, m_V2, m_V3);
   }
+  Vector GetNormal() const noexcept { return m_Normal; }
 
 private:
   Point m_V1, m_V2, m_V3;

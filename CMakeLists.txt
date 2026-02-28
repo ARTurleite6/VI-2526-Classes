@@ -75,6 +75,8 @@ add_executable(VI-RT src/main.cpp
     src/Shaders/WhittedShader.cpp
     src/Shaders/PathTracingShader.hpp
     src/Shaders/PathTracingShader.cpp
+    src/Shaders/DirectIllumination.hpp
+    src/Shaders/DirectIllumination.cpp
 )
 target_include_directories(VI-RT PRIVATE src)
 target_precompile_headers(VI-RT PRIVATE src/vi_pch.h)
