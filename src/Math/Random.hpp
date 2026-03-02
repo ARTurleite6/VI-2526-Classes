@@ -2,9 +2,13 @@
 
 #include "Math/Vector.hpp"
 
+#include <cstdint>
+#include <random>
+
 namespace VI {
 class Random {
 public:
+  static void Seed(uint64_t seed);
   static float RandomFloat(float min = -1.f, float max = 1.f);
   static Vector RandomVec3(float min = -1.f, float max = 1.f);
   static Point RandomInUnitDisk();

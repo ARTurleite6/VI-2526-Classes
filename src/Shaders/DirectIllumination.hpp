@@ -2,8 +2,6 @@
 
 #include "Math/RGB.hpp"
 
-#include <optional>
-
 namespace VI {
 
 class Light;
@@ -17,15 +15,19 @@ struct SelectedLight {
   float SelectionPDF;
 };
 
-std::optional<SelectedLight> SampleLightUniform(const Scene &scene);
+enum class DirectIlluminationMode {
+  Uniform,
+  All,
+};
 
 RGB EstimateDirectIllumination(const Ray &ray, const Scene &scene,
                                const Intersection &intersection,
                                const Material &material,
                                const SelectedLight &selected_light);
 
-RGB SampleDirectIlluminationUniform(const Ray &ray, const Scene &scene,
-                                    const Intersection &intersection,
-                                    const Material &material);
+RGB SampleDirectIllumination(
+    const Ray &ray, const Scene &scene, const Intersection &intersection,
+    const Material &material,
+    DirectIlluminationMode mode = DirectIlluminationMode::Uniform);
 
 } // namespace VI

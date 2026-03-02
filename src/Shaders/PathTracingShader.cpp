@@ -32,88 +32,57 @@ RGB PathTracingShader::Execute(const Ray &ray, const Scene &scene) const {
 }
 
 RGB PathTracingShader::DoExecute(const Ray &ray, const Scene &scene,
-                                 const Intersection &intersection,
-                                 int depth, bool allow_emissive) const {
+                                 const Intersection &intersection, int depth,
+                                 bool allow_emissive) const {
+  RGB color{0.0f};
+  if (depth > MAX_DEPTH) {
+    return color;
+  }
 
-  if (depth > MAX_DEPTH)
-    return RGB{0.f};
+  const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
+  const Material &material = scene.GetMaterial(primitive.MaterialIndex);
 
-  return DirectIllumination(ray, scene, intersection) +
-         IndirectIllumination(ray, scene, intersection, depth, allow_emissive);
+  if (material.GetMetallic() > 0.f) {
+    color += IndirectIllumination(ray, scene, intersection, material, depth,
+                                  allow_emissive);
+  }
+
+  return color + DirectIllumination(ray, scene, intersection);
 }
 
-RGB PathTracingShader::DirectIllumination(const Ray &ray, const Scene &scene,
-                                          const Intersection &intersection) const {
+RGB PathTracingShader::DirectIllumination(
+    const Ray &ray, const Scene &scene,
+    const Intersection &intersection) const {
   const auto &object = scene.GetPrimitive(intersection.ObjectIndex);
   const auto &material = scene.GetMaterial(object.MaterialIndex);
 
-  return SampleDirectIlluminationUniform(ray, scene, intersection, material);
+  return SampleDirectIllumination(ray, scene, intersection, material,
+                                  m_DirectIlluminationMode);
 }
 
 RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
                                             const Intersection &intersection,
-                                            int depth,
-                                            bool allow_emissive) const {
-  RGB color{0.0f};
-  LambertianBRDF lambertian;
-  MicrofacetBRDF microfacet;
-
-  auto &object = scene.GetPrimitive(intersection.ObjectIndex);
-  auto &material = scene.GetMaterial(object.MaterialIndex);
-
-  if (allow_emissive) {
-    color += material.GetEmissionColor() * material.GetRadiance();
-  }
-
-  float specular_weight = GetSpecularProbability(material);
-  float diffuse_weight = 1.0f - specular_weight;
-
-  OrthonormalBasis basis{intersection.Normal};
-  Vector wo_world = -ray.Direction;
-  Vector wo_local = basis.WorldToLocal(wo_world);
-
-  Vector wi_local;
-  float pdf = 0.0f;
-  bool next_allow_emissive = false;
-
-  if (Random::RandomFloat(0, 1) < diffuse_weight) {
-    wi_local = lambertian.Sample(wo_local, material);
-    float pdf_l = lambertian.PDF(wo_local, wi_local, material);
-    float pdf_s = microfacet.PDF(wo_local, wi_local, material);
-    pdf = diffuse_weight * pdf_l + specular_weight * pdf_s;
-    next_allow_emissive = false;
-  } else {
-    wi_local = microfacet.Sample(wo_local, material);
-    float pdf_l = lambertian.PDF(wo_local, wi_local, material);
-    float pdf_s = microfacet.PDF(wo_local, wi_local, material);
-    pdf = diffuse_weight * pdf_l + specular_weight * pdf_s;
-    next_allow_emissive = true;
-  }
-
-  if (pdf <= 0.0f || glm::isnan(pdf) || wi_local.z <= 0) {
-    return RGB{0.f};
-  }
-
-  RGB brdf = diffuse_weight * lambertian.Evaluate(wo_local, wi_local, material) +
-             specular_weight * microfacet.Evaluate(wo_local, wi_local, material);
-
-  Vector wi_world = basis.LocalToWorld(wi_local);
-
+                                            const Material &material, int depth,
+                                            bool allow_emissive
+                                            [[maybe_unused]]) const {
+  const Vector shading_normal =
+      FaceForward(intersection.Normal, -ray.Direction);
+  const Vector reflected = glm::reflect(ray.Direction, shading_normal);
+  const float cos_theta =
+      glm::max(0.0f, glm::dot(shading_normal, -ray.Direction));
   Ray scattered_ray =
-      Ray::WithOffset(intersection.Position, wi_world, intersection.Normal);
+      Ray::WithOffset(intersection.Position, reflected, intersection.Normal);
 
-  Intersection scatter_intersection{};
-  if (scene.Trace(scattered_ray, scatter_intersection)) {
-    RGB rcolor =
-        DoExecute(scattered_ray, scene, scatter_intersection, depth + 1,
-                  next_allow_emissive);
+  const RGB r0 = material.GetAlbedo();
+  const RGB fresnel = r0 + (RGB{1.f} - r0) * glm::pow(1.f - cos_theta, 5.f);
 
-    color += (brdf * wi_local.z * rcolor) / pdf;
-  } else {
-    color += (brdf * wi_local.z * m_BackgroundColor) / pdf;
+  Intersection scattered_intersection{};
+  if (!scene.Trace(scattered_ray, scattered_intersection)) {
+    return fresnel * m_BackgroundColor;
   }
 
-  return color;
+  return fresnel *
+         DoExecute(scattered_ray, scene, scattered_intersection, depth + 1);
 }
 
 } // namespace VI

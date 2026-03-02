@@ -23,9 +23,19 @@ int main() {
   constexpr float fovH = 60.f;
   constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.0f}};
+  PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.0f},
+                                        DirectIlluminationMode::Uniform};
 
   Scene scene = CreateCornellBox();
+
+  int point_light_weak = scene.AddMaterial({.Name = "Point Light W",
+                                            .EmissionColor = {1.f, 1.f, 1.f},
+                                            .EmissionPower = 0.5f});
+
+  scene.AddLight(std::make_unique<PointLight>(point_light_weak, Point{-70.f, 520.f, 30.f}));   // front-right
+  scene.AddLight(std::make_unique<PointLight>(point_light_weak, Point{520.f, 520.f, 30.f}));   // front-left
+  scene.AddLight(std::make_unique<PointLight>(point_light_weak, Point{-70.f, 520.f, 430.f}));  // back-right
+  scene.AddLight(std::make_unique<PointLight>(point_light_weak, Point{520.f, 520.f, 430.f}));  // back-left
 
   scene.Build();
   Renderer renderer;
