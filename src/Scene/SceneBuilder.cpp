@@ -180,26 +180,27 @@ Scene CreateCornellBox() {
   const int light_mat = scene.AddMaterial({.Name = "Light",
                                            .Albedo = {1.f, 1.f, 1.f},
                                            .EmissionColor = {1.f, 1.f, 1.f},
-                                           .EmissionPower = 10.f});
+                                           .EmissionPower = 20.f});
 
   // Area Light (on the ceiling)
+    /*
   {
     float y = 548.7f; // Slightly below the ceiling
     scene.AddPrimitive(Mesh{"Ceiling Light",
                             std::vector<Triangle>{Triangle{
-                                                      Point{213.0f, y, 227.0f},
-                                                      Point{343.0f, y, 227.0f},
-                                                      Point{343.0f, y, 332.0f},
+                                                      Point{158.0f, y, 160.0f},
+                                                      Point{298.0f, y, 160.0f},
+                                                      Point{298.0f, y, 300.0f},
                                                       Vector{0.0f, -1.0f, 0.0f},
                                                   },
                                                   Triangle{
-                                                      Point{213.0f, y, 227.0f},
-                                                      Point{343.0f, y, 332.0f},
-                                                      Point{213.0f, y, 332.0f},
+                                                      Point{158.0f, y, 160.0f},
+                                                      Point{298.0f, y, 300.0f},
+                                                      Point{158.0f, y, 300.0f},
                                                       Vector{0.0f, -1.0f, 0.0f},
                                                   }}},
                        light_mat);
-  }
+  }*/
 
   // Floor
   {

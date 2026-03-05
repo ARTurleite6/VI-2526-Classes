@@ -23,8 +23,10 @@ int main() {
   constexpr float fovH = 60.f;
   constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.0f},
-                                        DirectIlluminationMode::Uniform};
+  //PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.2f},
+  //                                      DirectIlluminationMode::Uniform};
+  PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.2f},
+                                          DirectIlluminationMode::All};
 
   Scene scene = CreateCornellBox();
 
@@ -39,8 +41,9 @@ int main() {
 
   scene.Build();
   Renderer renderer;
+    const int spp=1;
   const auto image =
-      renderer.Render(scene, camera, path_tracing_shader, 10, true);
+      renderer.Render(scene, camera, path_tracing_shader, spp, false);
 
   ImagePPM::Save(image, "image.ppm");
 
