@@ -44,9 +44,6 @@ public:
 
   constexpr RGB GetEmissionColor() const { return m_EmissionColor; }
   constexpr float GetEmissionPower() const { return m_EmissionPower; }
-  constexpr Vector GetEmissionIntensity() const {
-    return m_EmissionColor * m_EmissionPower;
-  }
 
 private:
   std::string m_Name;

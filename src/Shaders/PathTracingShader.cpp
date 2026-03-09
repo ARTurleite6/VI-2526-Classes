@@ -42,6 +42,10 @@ RGB PathTracingShader::DoExecute(const Ray &ray, const Scene &scene,
   const Primitive &primitive = scene.GetPrimitive(intersection.ObjectIndex);
   const Material &material = scene.GetMaterial(primitive.MaterialIndex);
 
+  if (allow_emissive && material.GetEmissionPower() > 0.0f) {
+      return material.GetRadiance();
+  }
+
   if (material.GetMetallic() > 0.f) {
     color += IndirectIllumination(ray, scene, intersection, material, depth,
                                   allow_emissive);
@@ -63,8 +67,7 @@ RGB PathTracingShader::DirectIllumination(
 RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
                                             const Intersection &intersection,
                                             const Material &material, int depth,
-                                            bool allow_emissive
-                                            [[maybe_unused]]) const {
+                                            bool allow_emissive) const {
   const Vector shading_normal =
       FaceForward(intersection.Normal, -ray.Direction);
   const Vector reflected = glm::reflect(ray.Direction, shading_normal);
@@ -81,8 +84,8 @@ RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
     return fresnel * m_BackgroundColor;
   }
 
-  return fresnel *
-         DoExecute(scattered_ray, scene, scattered_intersection, depth + 1);
+  return fresnel * DoExecute(scattered_ray, scene, scattered_intersection,
+                             depth + 1, allow_emissive);
 }
 
 } // namespace VI
