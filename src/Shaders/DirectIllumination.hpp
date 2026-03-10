@@ -23,7 +23,7 @@ enum class DirectIlluminationMode {
 RGB EstimateDirectIllumination(const Ray &ray, const Scene &scene,
                                const Intersection &intersection,
                                const Material &material,
-                               const SelectedLight &selected_light);
+                               const Light *selected_light);
 
 RGB SampleDirectIllumination(
     const Ray &ray, const Scene &scene, const Intersection &intersection,

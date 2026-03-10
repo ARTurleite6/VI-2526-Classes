@@ -11,6 +11,7 @@
 #include "Ray/Ray.hpp"
 #include "Scene/Scene.hpp"
 
+#include <cassert>
 #include <optional>
 
 namespace VI {
@@ -137,183 +138,170 @@ const Light *GetSupportedLightByIndex(const Scene &scene, int index) {
 RGB EstimateDirectIllumination(const Ray &ray, const Scene &scene,
                                const Intersection &intersection,
                                const Material &material,
-                               const SelectedLight &selected_light) {
-    
-    // valid light ?
-    if (selected_light.SelectionPDF <= 0.f || selected_light.LightPtr == nullptr) {
-        return RGB{0.f};
+                               const Light *selected_light) {
+  assert(selected_light != nullptr);
+  // get radiance
+  const Material &light_material =
+      scene.GetMaterial(selected_light->GetMaterialIndex());
+  const RGB light_radiance = light_material.GetRadiance();
+
+  // --------- AMBIENT LIGHT
+  if (selected_light->GetType() == LightType::Ambient) {
+    return (material.GetAlbedo() * light_radiance);
+  }
+
+  // --------- POINT LIGHT
+  if (selected_light->GetType() == LightType::Point) {
+    const auto *point_light = static_cast<const PointLight *>(selected_light);
+
+    // light vector and distance
+    const Vector to_light = point_light->GetPosition() - intersection.Position;
+    const float light_distance = glm::length(to_light);
+    if (light_distance <= EPSILON) {
+      return RGB{0.f};
     }
 
-    // get radiance
-    const Material &light_material = scene.GetMaterial(selected_light.LightPtr->GetMaterialIndex());
-    const RGB light_radiance = light_material.GetRadiance();
-
-    // --------- AMBIENT LIGHT
-    if (selected_light.LightPtr->GetType() == LightType::Ambient) {
-        return (material.GetAlbedo() * light_radiance) /
-            selected_light.SelectionPDF;
+    const Vector wi_world = to_light / light_distance;
+    const Ray shadow_ray =
+        Ray::WithOffset(intersection.Position, wi_world, intersection.Normal);
+    // In shadow ?
+    if (!scene.Visibility(shadow_ray, light_distance)) {
+      return RGB{0.f};
     }
 
-    
-    // --------- POINT LIGHT
-    if (selected_light.LightPtr->GetType() == LightType::Point) {
-        const auto *point_light = static_cast<const PointLight *>(selected_light.LightPtr);
-        
-        // light vector and distance
-        const Vector to_light = point_light->GetPosition() - intersection.Position;
-        const float light_distance = glm::length(to_light);
-        if (light_distance <= EPSILON) {
-            return RGB{0.f};
-        }
+    // create object reference frame around normal
+    const OrthonormalBasis basis{intersection.Normal};
+    const Vector wo_world = -ray.Direction;
+    const Vector wo_local = basis.WorldToLocal(wo_world);
+    const Vector wi_local = basis.WorldToLocal(wi_world);
 
-        const Vector wi_world = to_light / light_distance;
-        const Ray shadow_ray =
-            Ray::WithOffset(intersection.Position, wi_world, intersection.Normal);
-        // In shadow ?
-        if (!scene.Visibility(shadow_ray, light_distance)) {
-            return RGB{0.f};
-        }
-
-        // create object reference frame around normal
-        const OrthonormalBasis basis{intersection.Normal};
-        const Vector wo_world = -ray.Direction;
-        const Vector wo_local = basis.WorldToLocal(wo_world);
-        const Vector wi_local = basis.WorldToLocal(wi_world);
-
-        if (wi_local.z <= 0.f || wo_local.z <= 0.f) {
-            return RGB{0.f};
-        }
-
-        // evaluate BSDF
-        const RGB bsdf = EvaluateBSDF(wo_local, wi_local, material);
-
-        // Lr = bsdf * radiance * cos (theta)
-        return (bsdf * wi_local.z * light_radiance) / selected_light.SelectionPDF;
+    if (wi_local.z <= 0.f || wo_local.z <= 0.f) {
+      return RGB{0.f};
     }
 
-    // --------- AREA LIGHT
-    if (selected_light.LightPtr->GetType() == LightType::Area) {
-        const auto *area_light =
-            static_cast<const AreaLight *>(selected_light.LightPtr);
-        const int object_index = area_light->GetObjectIndex();
-        if (object_index < 0 || static_cast<size_t>(object_index) >= scene.GetPrimitiveCount()) {
-            return RGB{0.f};
-        }
+    // evaluate BSDF
+    const RGB bsdf = EvaluateBSDF(wo_local, wi_local, material);
 
-        const Primitive &light_primitive = scene.GetPrimitive(object_index);
-        const auto *mesh = std::get_if<Mesh>(&light_primitive.Geometry);
-        if (mesh == nullptr) {
-            return RGB{0.f};
-        }
+    // Lr = bsdf * radiance * cos (theta)
+    return (bsdf * wi_local.z * light_radiance);
+  }
 
-        // select a point in light source area
-        const auto area_sample = SampleMeshAreaLight(*mesh);
-        if (!area_sample.has_value() || area_sample->AreaPDF <= 0.f) {
-            return RGB{0.f};
-        }
-
-        // light vector
-        const Vector to_light = area_sample->Position - intersection.Position;
-        const float distance_squared = glm::dot(to_light, to_light);
-        if (distance_squared <= EPSILON * EPSILON) {
-            return RGB{0.f};
-        }
-        const float light_distance = glm::sqrt(distance_squared);
-        const Vector wi_world = to_light / light_distance;
-        const Vector shading_normal =
-            FaceForward(intersection.Normal, -ray.Direction);
-
-        const float cos_surface = glm::max(glm::dot(shading_normal, wi_world), 0.f);
-        if (cos_surface <= 0.f) {
-            return RGB{0.f};
-        }
-
-        const float cos_light =
-            glm::max(glm::dot(area_sample->Normal, -wi_world), 0.f);
-        if (cos_light <= 0.f) {
-            return RGB{0.f};
-        }
-
-        // shadow ray
-        const Ray shadow_ray =
-            Ray::WithOffset(intersection.Position, wi_world, shading_normal);
-        // in shadow ?
-        if (!scene.Visibility(shadow_ray, light_distance)) {
-            return RGB{0.f};
-        }
-
-        // object local reference frame (around normal)
-        const OrthonormalBasis basis{shading_normal};
-        const Vector wo_world = -ray.Direction;
-        const Vector wo_local = basis.WorldToLocal(wo_world);
-        const Vector wi_local = basis.WorldToLocal(wi_world);
-        if (wi_local.z <= 0.f || wo_local.z <= 0.f) {
-            return RGB{0.f};
-        }
-
-        const RGB bsdf = EvaluateBSDF(wo_local, wi_local, material);
-        
-        // G = cos (theta_N) * cos (theta_L) / d^2
-        const float geometry_term = (cos_surface * cos_light) / distance_squared;
-        const float pdf = selected_light.SelectionPDF * area_sample->AreaPDF;
-        if (pdf <= 0.f) {
-            return RGB{0.f};
-        }
-
-        // Lr = bsdf * L * G / pdf
-        return (bsdf * light_radiance * geometry_term) / pdf;
+  // --------- AREA LIGHT
+  if (selected_light->GetType() == LightType::Area) {
+    const auto *area_light = static_cast<const AreaLight *>(selected_light);
+    const int object_index = area_light->GetObjectIndex();
+    if (object_index < 0 ||
+        static_cast<size_t>(object_index) >= scene.GetPrimitiveCount()) {
+      return RGB{0.f};
     }
 
-    return RGB{0.f};
+    const Primitive &light_primitive = scene.GetPrimitive(object_index);
+    const auto *mesh = std::get_if<Mesh>(&light_primitive.Geometry);
+    if (mesh == nullptr) {
+      return RGB{0.f};
+    }
+
+    // select a point in light source area
+    const auto area_sample = SampleMeshAreaLight(*mesh);
+    if (!area_sample.has_value() || area_sample->AreaPDF <= 0.f) {
+      return RGB{0.f};
+    }
+
+    // light vector
+    const Vector to_light = area_sample->Position - intersection.Position;
+    const float distance_squared = glm::dot(to_light, to_light);
+    if (distance_squared <= EPSILON * EPSILON) {
+      return RGB{0.f};
+    }
+    const float light_distance = glm::sqrt(distance_squared);
+    const Vector wi_world = to_light / light_distance;
+    const Vector shading_normal =
+        FaceForward(intersection.Normal, -ray.Direction);
+
+    const float cos_surface = glm::max(glm::dot(shading_normal, wi_world), 0.f);
+    if (cos_surface <= 0.f) {
+      return RGB{0.f};
+    }
+
+    const float cos_light =
+        glm::max(glm::dot(area_sample->Normal, -wi_world), 0.f);
+    if (cos_light <= 0.f) {
+      return RGB{0.f};
+    }
+
+    // shadow ray
+    const Ray shadow_ray =
+        Ray::WithOffset(intersection.Position, wi_world, shading_normal);
+    // in shadow ?
+    if (!scene.Visibility(shadow_ray, light_distance)) {
+      return RGB{0.f};
+    }
+
+    // object local reference frame (around normal)
+    const OrthonormalBasis basis{shading_normal};
+    const Vector wo_world = -ray.Direction;
+    const Vector wo_local = basis.WorldToLocal(wo_world);
+    const Vector wi_local = basis.WorldToLocal(wi_world);
+    if (wi_local.z <= 0.f || wo_local.z <= 0.f) {
+      return RGB{0.f};
+    }
+
+    const RGB bsdf = EvaluateBSDF(wo_local, wi_local, material);
+
+    // G = cos (theta_N) * cos (theta_L) / d^2
+    const float geometry_term = (cos_surface * cos_light) / distance_squared;
+
+    // Lr = bsdf * L * G / pdf
+    return (bsdf * light_radiance * geometry_term) / area_sample->AreaPDF;
+  }
+
+  return RGB{0.f};
 }
 
 RGB SampleDirectIllumination(const Ray &ray, const Scene &scene,
                              const Intersection &intersection,
                              const Material &material,
                              const DirectIlluminationMode mode) {
-    
-    const int supported_light_count = CountSupportedLights(scene);
-    if (supported_light_count <= 0) {
-        return RGB{0.f};
+
+  const int supported_light_count = CountSupportedLights(scene);
+  if (supported_light_count <= 0) {
+    return RGB{0.f};
+  }
+
+  switch (mode) {
+  case DirectIlluminationMode::All: {
+    RGB direct_lighting{0.f};
+    bool has_supported_light = false;
+
+    for (const auto &light : scene.GetLights()) {
+      if (!IsSupportedLightType(light->GetType())) {
+        continue;
+      }
+      has_supported_light = true;
+      direct_lighting += EstimateDirectIllumination(ray, scene, intersection,
+                                                    material, light.get());
     }
-    
-    switch (mode) {
-        case DirectIlluminationMode::All:
-        {
-            RGB direct_lighting{0.f};
-            bool has_supported_light = false;
-            
-            for (const auto &light : scene.GetLights()) {
-                if (!IsSupportedLightType(light->GetType())) {
-                    continue;
-                }
-                has_supported_light = true;
-                direct_lighting += EstimateDirectIllumination(
-                                                                  ray, scene, intersection, material,
-                                                                  SelectedLight{.LightPtr = light.get(), .SelectionPDF = 1.0f});
-            }
-            
-            return has_supported_light ? direct_lighting : RGB{0.f};
-            break;
-        }
-        case DirectIlluminationMode::Uniform:
-        {
-            
-            const int sampled_light_index = std::min(
-                                                     static_cast<int>(Random::RandomFloat(0.f, 1.f) * supported_light_count),
-                                                     supported_light_count - 1);
-            const Light *sampled_light =
-            GetSupportedLightByIndex(scene, sampled_light_index);
-            if (sampled_light == nullptr) {
-                return RGB{0.f};
-            }
-            
-            return EstimateDirectIllumination( ray, scene, intersection, material,
-                                                  SelectedLight{.LightPtr = sampled_light,
-                .SelectionPDF = 1.0f / supported_light_count});
-            break;
-        }
+
+    return has_supported_light ? direct_lighting : RGB{0.f};
+    break;
+  }
+  case DirectIlluminationMode::Uniform: {
+
+    const int sampled_light_index = std::min(
+        static_cast<int>(Random::RandomFloat(0.f, 1.f) * supported_light_count),
+        supported_light_count - 1);
+    const Light *sampled_light =
+        GetSupportedLightByIndex(scene, sampled_light_index);
+    if (sampled_light == nullptr) {
+      return RGB{0.f};
     }
+
+    return EstimateDirectIllumination(ray, scene, intersection, material,
+                                      sampled_light) *
+           (1.0f / supported_light_count);
+    break;
+  }
+  }
 }
 
 } // namespace VI
