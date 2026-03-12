@@ -208,7 +208,9 @@ RGB EstimateDirectIllumination(const Ray &ray, const Scene &scene,
     }
 
     // light vector
-    const Vector to_light = area_sample->Position - intersection.Position;
+    const Vector to_light =
+        (area_sample->Position + (area_sample->Normal * EPSILON)) -
+        intersection.Position;
     const float distance_squared = glm::dot(to_light, to_light);
     if (distance_squared <= EPSILON * EPSILON) {
       return RGB{0.f};
@@ -296,9 +298,11 @@ RGB SampleDirectIllumination(const Ray &ray, const Scene &scene,
       return RGB{0.f};
     }
 
+    const float pdf = (1.0f / supported_light_count);
+
     return EstimateDirectIllumination(ray, scene, intersection, material,
-                                      sampled_light) *
-           (1.0f / supported_light_count);
+                                      sampled_light) /
+           pdf;
     break;
   }
   }
