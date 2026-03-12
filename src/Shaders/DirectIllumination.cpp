@@ -296,9 +296,10 @@ RGB SampleDirectIllumination(const Ray &ray, const Scene &scene,
       return RGB{0.f};
     }
 
+      const float pdf = (1.0f / supported_light_count);
+
     return EstimateDirectIllumination(ray, scene, intersection, material,
-                                      sampled_light) *
-           (1.0f / supported_light_count);
+                                      sampled_light) / pdf;
     break;
   }
   }
