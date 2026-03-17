@@ -118,26 +118,10 @@ SelectedLight SelectUniformLight(const Scene &scene) {
 }
 
 SelectedLight SelectImportanceLight(const Scene &scene) {
-  const auto &distribution = scene.GetLightSamplingDistribution();
-  if (!distribution.IsValid()) {
-    return SelectUniformLight(scene);
-  }
-
-  const int sampled_light_index =
-      SampleCDFIndex(distribution.CDF, Random::RandomFloat(0.f, 1.f));
-  if (sampled_light_index < 0) {
-    return SelectUniformLight(scene);
-  }
-
-  const float selection_pdf =
-      GetPDFValue(distribution.PDF, sampled_light_index);
-  if (selection_pdf <= 0.f) {
-    return SelectUniformLight(scene);
-  }
-
-  const int scene_light_index = distribution.LightIndices[sampled_light_index];
-  return {.LightPtr = scene.GetLights()[scene_light_index].get(),
-          .SelectionPDF = selection_pdf};
+  (void)scene;
+  // TODO(student): sample a light using the precomputed importance-sampling
+  // distribution stored in the scene.
+  return {};
 }
 
 } // namespace
