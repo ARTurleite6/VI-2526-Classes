@@ -1,6 +1,7 @@
 #include "Shaders/DirectIllumination.hpp"
 
 #include "Light/Light.hpp"
+#include "Math/DiscreteDistribution.hpp"
 #include "Math/Math.hpp"
 #include "Math/Random.hpp"
 #include "Primitive/BRDF.hpp"
@@ -99,38 +100,44 @@ RGB EvaluateBSDF(const Vector &wo_local, const Vector &wi_local,
          specular_weight * microfacet.Evaluate(wo_local, wi_local, material);
 }
 
-bool IsSupportedLightType(const LightType light_type) {
-  return light_type == LightType::Ambient || light_type == LightType::Point ||
-         light_type == LightType::Area;
+SelectedLight SelectUniformLight(const Scene &scene) {
+  const auto &distribution = scene.GetLightSamplingDistribution();
+  const int supported_light_count =
+      static_cast<int>(distribution.LightIndices.size());
+  if (supported_light_count <= 0) {
+    return {};
+  }
+
+  const int sampled_light_index = std::min(
+      static_cast<int>(Random::RandomFloat(0.f, 1.f) * supported_light_count),
+      supported_light_count - 1);
+  const int scene_light_index = distribution.LightIndices[sampled_light_index];
+
+  return {.LightPtr = scene.GetLights()[scene_light_index].get(),
+          .SelectionPDF = 1.0f / supported_light_count};
 }
 
-int CountSupportedLights(const Scene &scene) {
-  int supported_light_count = 0;
-  for (const auto &light : scene.GetLights()) {
-    if (IsSupportedLightType(light->GetType())) {
-      ++supported_light_count;
-    }
-  }
-  return supported_light_count;
-}
-
-const Light *GetSupportedLightByIndex(const Scene &scene, int index) {
-  if (index < 0) {
-    return nullptr;
+SelectedLight SelectImportanceLight(const Scene &scene) {
+  const auto &distribution = scene.GetLightSamplingDistribution();
+  if (!distribution.IsValid()) {
+    return SelectUniformLight(scene);
   }
 
-  int current_index = 0;
-  for (const auto &light : scene.GetLights()) {
-    if (!IsSupportedLightType(light->GetType())) {
-      continue;
-    }
-    if (current_index == index) {
-      return light.get();
-    }
-    ++current_index;
+  const int sampled_light_index =
+      SampleCDFIndex(distribution.CDF, Random::RandomFloat(0.f, 1.f));
+  if (sampled_light_index < 0) {
+    return SelectUniformLight(scene);
   }
 
-  return nullptr;
+  const float selection_pdf =
+      GetPDFValue(distribution.PDF, sampled_light_index);
+  if (selection_pdf <= 0.f) {
+    return SelectUniformLight(scene);
+  }
+
+  const int scene_light_index = distribution.LightIndices[sampled_light_index];
+  return {.LightPtr = scene.GetLights()[scene_light_index].get(),
+          .SelectionPDF = selection_pdf};
 }
 
 } // namespace
@@ -264,8 +271,9 @@ RGB SampleDirectIllumination(const Ray &ray, const Scene &scene,
                              const Intersection &intersection,
                              const Material &material,
                              const DirectIlluminationMode mode) {
-
-  const int supported_light_count = CountSupportedLights(scene);
+  const auto &distribution = scene.GetLightSamplingDistribution();
+  const int supported_light_count =
+      static_cast<int>(distribution.LightIndices.size());
   if (supported_light_count <= 0) {
     return RGB{0.f};
   }
@@ -273,39 +281,38 @@ RGB SampleDirectIllumination(const Ray &ray, const Scene &scene,
   switch (mode) {
   case DirectIlluminationMode::All: {
     RGB direct_lighting{0.f};
-    bool has_supported_light = false;
 
-    for (const auto &light : scene.GetLights()) {
-      if (!IsSupportedLightType(light->GetType())) {
-        continue;
-      }
-      has_supported_light = true;
+    for (const int light_index : distribution.LightIndices) {
+      const Light *light = scene.GetLights()[light_index].get();
       direct_lighting += EstimateDirectIllumination(ray, scene, intersection,
-                                                    material, light.get());
+                                                    material, light);
     }
 
-    return has_supported_light ? direct_lighting : RGB{0.f};
-    break;
+    return direct_lighting;
   }
   case DirectIlluminationMode::Uniform: {
-
-    const int sampled_light_index = std::min(
-        static_cast<int>(Random::RandomFloat(0.f, 1.f) * supported_light_count),
-        supported_light_count - 1);
-    const Light *sampled_light =
-        GetSupportedLightByIndex(scene, sampled_light_index);
-    if (sampled_light == nullptr) {
+    const SelectedLight selected_light = SelectUniformLight(scene);
+    if (selected_light.LightPtr == nullptr || selected_light.SelectionPDF <= 0.f) {
       return RGB{0.f};
     }
 
-    const float pdf = (1.0f / supported_light_count);
+    return EstimateDirectIllumination(ray, scene, intersection, material,
+                                      selected_light.LightPtr) /
+           selected_light.SelectionPDF;
+  }
+  case DirectIlluminationMode::Importance: {
+    const SelectedLight selected_light = SelectImportanceLight(scene);
+    if (selected_light.LightPtr == nullptr || selected_light.SelectionPDF <= 0.f) {
+      return RGB{0.f};
+    }
 
     return EstimateDirectIllumination(ray, scene, intersection, material,
-                                      sampled_light) /
-           pdf;
-    break;
+                                      selected_light.LightPtr) /
+           selected_light.SelectionPDF;
   }
   }
+
+  return RGB{0.f};
 }
 
 } // namespace VI

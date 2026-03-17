@@ -2,6 +2,8 @@
 
 #include "Image/Image.hpp"
 
+#include <string>
+
 namespace VI {
 class ImagePPM {
 public:

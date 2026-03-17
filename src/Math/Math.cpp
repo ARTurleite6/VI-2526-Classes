@@ -1,5 +1,10 @@
 #include "Math/Math.hpp"
 
+#include <glm/common.hpp>
+#include <glm/geometric.hpp>
+
+#include "Math/Vector.hpp"
+
 namespace VI {
 OrthonormalBasis::OrthonormalBasis(const Vector &n)
     : m_Normal{glm::normalize(n)} {

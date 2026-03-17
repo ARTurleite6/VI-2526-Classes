@@ -11,12 +11,13 @@ struct Intersection;
 struct Ray;
 
 struct SelectedLight {
-  const Light *LightPtr;
-  float SelectionPDF;
+  const Light *LightPtr{nullptr};
+  float SelectionPDF{0.f};
 };
 
 enum class DirectIlluminationMode {
   Uniform,
+  Importance,
   All,
 };
 

@@ -2,6 +2,10 @@
 
 #include "Math/RGB.hpp"
 
+#include <cstddef>
+#include <stdexcept>
+#include <vector>
+
 namespace VI {
 class Image final {
 public:

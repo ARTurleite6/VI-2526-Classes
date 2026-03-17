@@ -1,5 +1,16 @@
 #include "Image/FileImages.hpp"
 
+#include "Image/Image.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <ios>
+#include <iostream>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+
 namespace VI {
 
 Image ImagePPM::Load(const std::string &filename [[maybe_unused]]) {

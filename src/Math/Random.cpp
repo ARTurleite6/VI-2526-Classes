@@ -1,5 +1,7 @@
 #include "Math/Random.hpp"
+#include "Math/Vector.hpp"
 
+#include <cstdint>
 #include <random>
 
 namespace VI {

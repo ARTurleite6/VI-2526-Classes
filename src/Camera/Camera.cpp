@@ -2,6 +2,12 @@
 
 #include "Math/Random.hpp"
 #include "Math/Vector.hpp"
+#include "Ray/Ray.hpp"
+
+#include <glm/ext/vector_float2.hpp>
+#include <glm/geometric.hpp>
+
+#include <cmath>
 
 namespace VI {
 Camera::Camera(Point eye, Point at, Vector up, int width, int height,

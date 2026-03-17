@@ -61,6 +61,8 @@ add_executable(VI-RT src/main.cpp
     # Math
     src/Math/Math.hpp
     src/Math/Math.cpp
+    src/Math/DiscreteDistribution.hpp
+    src/Math/DiscreteDistribution.cpp
     src/Math/RGB.hpp
     src/Math/Vector.hpp
     src/Math/Random.hpp

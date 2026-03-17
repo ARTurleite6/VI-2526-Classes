@@ -1,11 +1,98 @@
 #include "Scene/Scene.hpp"
 
+#include "Math/DiscreteDistribution.hpp"
 #include "Math/Math.hpp"
+#include "Primitive/Geometry/Mesh.hpp"
 #include "Primitive/Geometry/Geometry.hpp"
 #include "Ray/Intersection.hpp"
 #include "Ray/Ray.hpp"
 
 namespace VI {
+namespace {
+
+bool IsSupportedDirectLightType(const LightType light_type) {
+  return light_type == LightType::Ambient || light_type == LightType::Point ||
+         light_type == LightType::Area;
+}
+
+float ComputeTriangleArea(const Triangle &triangle) {
+  const auto [v1, v2, v3] = triangle.GetVertices();
+  return 0.5f * glm::length(glm::cross(v2 - v1, v3 - v1));
+}
+
+float ComputeMeshArea(const Mesh &mesh) {
+  float total_area = 0.f;
+  for (size_t i = 0; i < mesh.GetTriangleCount(); ++i) {
+    total_area += ComputeTriangleArea(mesh.GetTriangle(i));
+  }
+  return total_area;
+}
+
+float ComputeLuminance(const RGB &radiance) {
+  return 0.2126f * radiance.r + 0.7152f * radiance.g + 0.0722f * radiance.b;
+}
+
+float ComputeLightWeight(const Scene &scene, const Light &light) {
+  const Material &material = scene.GetMaterial(light.GetMaterialIndex());
+  const float radiance_luminance = ComputeLuminance(material.GetRadiance());
+  if (radiance_luminance <= 0.f) {
+    return 0.f;
+  }
+
+  switch (light.GetType()) {
+  case LightType::Ambient:
+  case LightType::Point:
+    return radiance_luminance;
+  case LightType::Area: {
+    const auto *area_light = static_cast<const AreaLight *>(&light);
+    const int object_index = area_light->GetObjectIndex();
+    if (object_index < 0 ||
+        static_cast<size_t>(object_index) >= scene.GetPrimitiveCount()) {
+      return 0.f;
+    }
+
+    const Primitive &primitive = scene.GetPrimitive(object_index);
+    const auto *mesh = std::get_if<Mesh>(&primitive.Geometry);
+    if (mesh == nullptr) {
+      return 0.f;
+    }
+
+    return ComputeMeshArea(*mesh) * radiance_luminance;
+  }
+  }
+
+  return 0.f;
+}
+
+LightSamplingDistribution BuildLightSamplingDistribution(const Scene &scene) {
+  LightSamplingDistribution distribution{};
+  std::vector<float> weights{};
+
+  const auto &lights = scene.GetLights();
+  distribution.LightIndices.reserve(lights.size());
+  weights.reserve(lights.size());
+
+  for (size_t light_index = 0; light_index < lights.size(); ++light_index) {
+    const Light &light = *lights[light_index];
+    if (!IsSupportedDirectLightType(light.GetType())) {
+      continue;
+    }
+
+    distribution.LightIndices.push_back(static_cast<int>(light_index));
+    weights.push_back(std::max(ComputeLightWeight(scene, light), 0.f));
+  }
+
+  distribution.PDF = NormalizeWeightsToPDF(weights);
+  distribution.CDF = BuildCDF(distribution.PDF);
+  return distribution;
+}
+
+} // namespace
+
+void Scene::Build() {
+  m_AccelerationStructure = GridAccelerationStructure::Create(*this);
+  m_LightSamplingDistribution = BuildLightSamplingDistribution(*this);
+}
 
 bool Scene::Trace(const Ray &ray, Intersection &intersection) const {
   intersection.Distance = -1;

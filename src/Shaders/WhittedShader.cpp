@@ -64,8 +64,9 @@ RGB WhittedShader::DirectIllumination(const Ray &ray, const Scene &scene,
 
       if (const float cos_light = glm::dot(direction, shading_normal);
           cos_light > 0) {
-        const auto shadow_ray = Ray::WithOffset(intersection.Position,
-                                                direction, intersection.Normal);
+        const auto shadow_ray =
+            Ray::WithOffset(intersection.Position, direction,
+                            intersection.Normal, light_distance * EPSILON);
 
         if (scene.Visibility(shadow_ray, light_distance)) {
           color += cos_light * diffuse_color * light_material.GetRadiance();

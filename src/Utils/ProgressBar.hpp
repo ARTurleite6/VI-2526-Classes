@@ -1,5 +1,8 @@
 #pragma once
 
+#include <atomic>
+#include <mutex>
+
 namespace VI {
 class ProgressBar final {
 public:

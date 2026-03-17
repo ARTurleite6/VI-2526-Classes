@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Light/Light.hpp"
+#include "Math/DiscreteDistribution.hpp"
 #include "Primitive/AccelerationStructures/AccelerationStructure.hpp"
 #include "Primitive/AccelerationStructures/GridAccelerationStructure.hpp"
 #include "Primitive/Geometry/Geometry.hpp"
@@ -17,9 +18,7 @@ struct Intersection;
 
 class Scene final {
 public:
-  void Build() {
-    m_AccelerationStructure = GridAccelerationStructure::Create(*this);
-  }
+  void Build();
 
   bool Trace(const Ray &ray, Intersection &intersection) const;
 
@@ -63,6 +62,9 @@ public:
     return m_Lights;
   }
   inline size_t GetPrimitiveCount() const { return m_Primitives.size(); }
+  inline const LightSamplingDistribution &GetLightSamplingDistribution() const {
+    return m_LightSamplingDistribution;
+  }
 
   BoundingBox ComputeBoundingBox() const;
 
@@ -70,6 +72,7 @@ private:
   std::vector<Primitive> m_Primitives{};
   std::vector<Material> m_Materials{};
   std::vector<std::unique_ptr<Light>> m_Lights{};
+  LightSamplingDistribution m_LightSamplingDistribution{};
   GridAccelerationStructure m_AccelerationStructure{};
 };
 } // namespace VI

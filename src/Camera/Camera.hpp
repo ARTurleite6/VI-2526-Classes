@@ -3,6 +3,8 @@
 #include "Math/Vector.hpp"
 #include "Ray/Ray.hpp"
 
+#include <glm/ext/vector_float2.hpp>
+
 namespace VI {
 class Camera final {
 public:

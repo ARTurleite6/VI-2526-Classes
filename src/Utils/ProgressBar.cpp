@@ -1,5 +1,10 @@
 #include "ProgressBar.hpp"
 
+#include <iomanip>
+#include <iostream>
+#include <mutex>
+#include <ostream>
+
 namespace VI {
 
 ProgressBar::ProgressBar(int total, int bar_width)
