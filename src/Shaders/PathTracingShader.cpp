@@ -17,7 +17,7 @@
 #include <algorithm>
 
 namespace VI {
-constexpr float MAX_DEPTH = 10;
+constexpr float MAX_DEPTH = 5;
 
 inline float max3(const Vector &v) { return std::max(v.x, std::max(v.y, v.z)); }
 
@@ -78,13 +78,13 @@ RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
   const Vector shading_normal =
       FaceForward(intersection.Normal, -ray.Direction);
 
-  if (material.GetMetallic() <= 0.f) {
+  if (material.GetMetallic() <= 0.f) {  // no specular, thus diffuse
     const LambertianBRDF lambertian{};
     const OrthonormalBasis basis{shading_normal};
     const Vector wo_local = basis.WorldToLocal(-ray.Direction);
     const Vector wi_local = lambertian.Sample(wo_local, material);
     const float pdf = lambertian.PDF(wo_local, wi_local, material);
-
+      
     if (wo_local.z <= 0.f || wi_local.z <= 0.f || pdf <= 0.f) {
       return RGB{0.0f};
     }
@@ -104,23 +104,26 @@ RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
 
     return (f * incoming_radiance * cos_theta) / pdf;
   }
-
-  const Vector reflected = glm::reflect(ray.Direction, shading_normal);
-  const float cos_theta =
+    
+  else {    // Specular
+      
+      const Vector reflected = glm::reflect(ray.Direction, shading_normal);
+      const float cos_theta =
       glm::max(0.0f, glm::dot(shading_normal, -ray.Direction));
-  Ray scattered_ray =
+      Ray scattered_ray =
       Ray::WithOffset(intersection.Position, reflected, shading_normal);
-
-  const RGB r0 = material.GetAlbedo();
-  const RGB fresnel = r0 + (RGB{1.f} - r0) * glm::pow(1.f - cos_theta, 5.f);
-
-  Intersection scattered_intersection{};
-  if (!scene.Trace(scattered_ray, scattered_intersection)) {
-    return fresnel * m_BackgroundColor;
+      
+      const RGB r0 = material.GetAlbedo();
+      const RGB fresnel = r0 + (RGB{1.f} - r0) * glm::pow(1.f - cos_theta, 5.f);
+      
+      Intersection scattered_intersection{};
+      if (!scene.Trace(scattered_ray, scattered_intersection)) {
+          return fresnel * m_BackgroundColor;
+      }
+      
+      return fresnel * DoExecute(scattered_ray, scene, scattered_intersection,
+                                 depth + 1, allow_emissive);
   }
-
-  return fresnel * DoExecute(scattered_ray, scene, scattered_intersection,
-                             depth + 1, allow_emissive);
 }
 
 } // namespace VI
