@@ -1,6 +1,7 @@
 #include "Shaders/PathTracingShader.hpp"
 
 #include "Math/Math.hpp"
+#include "Math/Random.hpp"
 #include "Math/RGB.hpp"
 #include "Math/Vector.hpp"
 #include "Primitive/BRDF.hpp"
@@ -18,17 +19,15 @@
 
 namespace VI {
 constexpr float MAX_DEPTH = 10;
+constexpr int RUSSIAN_ROULETTE_DEPTH = 3;
 
-inline float max3(const Vector &v) { return std::max(v.x, std::max(v.y, v.z)); }
+namespace {
 
-inline float GetSpecularProbability(const Material &material) {
-  Vector F0 =
-      glm::mix(Vector(0.04f), material.GetAlbedo(), material.GetMetallic());
-  float baseProb = max3(F0);
-  float roughnessInfluence =
-      glm::smoothstep(0.0f, 1.0f, material.GetRoughness() * 0.7f);
-  return glm::mix(baseProb, baseProb * 0.5f, roughnessInfluence);
+bool IsDeltaLikeSpecular(const Material &material) {
+  return material.GetMetallic() > 0.9f && material.GetRoughness() <= 0.05f;
 }
+
+} // namespace
 
 RGB PathTracingShader::Execute(const Ray &ray, const Scene &scene) const {
   Intersection intersection{};
@@ -54,11 +53,14 @@ RGB PathTracingShader::DoExecute(const Ray &ray, const Scene &scene,
     return allow_emissive ? material.GetRadiance() : RGB{0.0f};
   }
 
-  color +=
-      IndirectIllumination(ray, scene, intersection, material, depth,
-                           allow_emissive);
+  color += IndirectIllumination(ray, scene, intersection, material, depth,
+                                allow_emissive);
 
-  return color + DirectIllumination(ray, scene, intersection);
+  if (!IsDeltaLikeSpecular(material)) {
+    color += DirectIllumination(ray, scene, intersection);
+  }
+
+  return color;
 }
 
 RGB PathTracingShader::DirectIllumination(
@@ -74,53 +76,67 @@ RGB PathTracingShader::DirectIllumination(
 RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
                                             const Intersection &intersection,
                                             const Material &material, int depth,
-                                            bool allow_emissive) const {
+                                            bool allow_emissive
+                                                [[maybe_unused]]) const {
+  const bool is_delta_like_specular = IsDeltaLikeSpecular(material);
   const Vector shading_normal =
       FaceForward(intersection.Normal, -ray.Direction);
+  const OrthonormalBasis basis{shading_normal};
+  const Vector wo_local = basis.WorldToLocal(-ray.Direction);
+  if (wo_local.z <= 0.f) {
+    return RGB{0.0f};
+  }
 
-  if (material.GetMetallic() <= 0.f) {
-    const LambertianBRDF lambertian{};
-    const OrthonormalBasis basis{shading_normal};
-    const Vector wo_local = basis.WorldToLocal(-ray.Direction);
-    const Vector wi_local = lambertian.Sample(wo_local, material);
-    const float pdf = lambertian.PDF(wo_local, wi_local, material);
+  const LambertianBRDF lambertian{};
+  const MicrofacetBRDF microfacet{};
+  const float specular_probability = material.GetSpecularProbability();
+  const float diffuse_probability = 1.0f - specular_probability;
 
-    if (wo_local.z <= 0.f || wi_local.z <= 0.f || pdf <= 0.f) {
+  const bool sample_specular =
+      Random::RandomFloat(0.f, 1.f) < specular_probability;
+  const Vector wi_local = sample_specular ? microfacet.Sample(wo_local, material)
+                                          : lambertian.Sample(wo_local, material);
+  if (wi_local.z <= 0.f) {
+    return RGB{0.0f};
+  }
+
+  const RGB diffuse_f = lambertian.Evaluate(wo_local, wi_local, material);
+  const RGB specular_f = microfacet.Evaluate(wo_local, wi_local, material);
+  const float diffuse_pdf = lambertian.PDF(wo_local, wi_local, material);
+  const float specular_pdf = microfacet.PDF(wo_local, wi_local, material);
+  const RGB f = diffuse_probability * diffuse_f + specular_probability * specular_f;
+  const float pdf =
+      diffuse_probability * diffuse_pdf + specular_probability * specular_pdf;
+  if (pdf <= 0.f) {
+    return RGB{0.0f};
+  }
+
+  const float cos_theta = wi_local.z;
+  const RGB throughput = (f * cos_theta) / pdf;
+  float continuation_probability = 1.0f;
+  if (!is_delta_like_specular && depth >= RUSSIAN_ROULETTE_DEPTH) {
+    continuation_probability =
+        glm::clamp(std::max(throughput.x, std::max(throughput.y, throughput.z)),
+                   0.05f, 0.95f);
+    if (Random::RandomFloat(0.f, 1.f) >= continuation_probability) {
       return RGB{0.0f};
     }
-
-    const RGB f = lambertian.Evaluate(wo_local, wi_local, material);
-    const float cos_theta = wi_local.z;
-    const Vector wi_world = glm::normalize(basis.LocalToWorld(wi_local));
-    Ray scattered_ray =
-        Ray::WithOffset(intersection.Position, wi_world, shading_normal);
-
-    Intersection scattered_intersection{};
-    RGB incoming_radiance = m_BackgroundColor;
-    if (scene.Trace(scattered_ray, scattered_intersection)) {
-      incoming_radiance = DoExecute(scattered_ray, scene, scattered_intersection,
-                                    depth + 1, false);
-    }
-
-    return (f * incoming_radiance * cos_theta) / pdf;
   }
 
-  const Vector reflected = glm::reflect(ray.Direction, shading_normal);
-  const float cos_theta =
-      glm::max(0.0f, glm::dot(shading_normal, -ray.Direction));
-  Ray scattered_ray =
-      Ray::WithOffset(intersection.Position, reflected, shading_normal);
-
-  const RGB r0 = material.GetAlbedo();
-  const RGB fresnel = r0 + (RGB{1.f} - r0) * glm::pow(1.f - cos_theta, 5.f);
+  const Vector wi_world = glm::normalize(basis.LocalToWorld(wi_local));
+  const Ray scattered_ray =
+      Ray::WithOffset(intersection.Position, wi_world, shading_normal);
 
   Intersection scattered_intersection{};
-  if (!scene.Trace(scattered_ray, scattered_intersection)) {
-    return fresnel * m_BackgroundColor;
+  RGB incoming_radiance = m_BackgroundColor;
+  if (scene.Trace(scattered_ray, scattered_intersection)) {
+    const bool next_allow_emissive =
+        is_delta_like_specular && sample_specular;
+    incoming_radiance = DoExecute(scattered_ray, scene, scattered_intersection,
+                                  depth + 1, next_allow_emissive);
   }
 
-  return fresnel * DoExecute(scattered_ray, scene, scattered_intersection,
-                             depth + 1, allow_emissive);
+  return throughput * incoming_radiance / continuation_probability;
 }
 
 } // namespace VI

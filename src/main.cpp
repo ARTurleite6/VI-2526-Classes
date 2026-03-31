@@ -7,6 +7,7 @@
 #include "Shaders/AmbientShader.hpp"
 #include "Shaders/DirectIllumination.hpp"
 #include "Shaders/PathTracingShader.hpp"
+#include "Shaders/VeachShader.hpp"
 #include "Shaders/WhittedShader.hpp"
 
 #include <chrono>
@@ -20,24 +21,24 @@ int main() {
   constexpr int w = 800;
   constexpr int h = 600;
 
-  constexpr Point Eye = {280, 265, -500};
-  constexpr Point At = {280, 260, 0};
-
+  // Camera for the Veach demo scene: centered composition with the plate stack
+  // directly under the square lights and a less dominant floor presence.
+  constexpr Point Eye = {278, 273, -800};
+  constexpr Point At = {278, 273, 200};
   constexpr Vector Up = {0, 1, 0};
-  constexpr float fovH = 60.f;
-  constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
+  constexpr float fovH = 40.f;
+  constexpr float fovHrad = fovH * 3.14f / 180.f;
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  constexpr auto direct_mode = DirectIlluminationMode::Importance;
-  // constexpr auto direct_mode = DirectIlluminationMode::Uniform;
-  PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.2f}, direct_mode};
 
-  Scene scene = CreateImportanceSamplingCornellBox();
+  PathTracingShader veach_shader{{0.0f, 0.0f, 0.0f}};
+
+  Scene scene = CreateCornellBox();
 
   scene.Build();
   Renderer renderer;
-  constexpr int spp = 40;
+  constexpr int spp = 24;
   const auto image =
-      renderer.Render(scene, camera, path_tracing_shader, spp, false);
+      renderer.Render(scene, camera, veach_shader, spp, true);
 
   ImagePPM::Save(image, "image.ppm");
 

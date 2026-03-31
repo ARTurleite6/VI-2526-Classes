@@ -18,21 +18,6 @@
 namespace VI {
 namespace {
 
-inline float Max3(const Vector &v) { return std::max(v.x, std::max(v.y, v.z)); }
-
-float ComputeSpecularWeight(const Material &material) {
-  const Vector f0 =
-      glm::mix(Vector(0.04f), material.GetAlbedo(), material.GetMetallic());
-  const float base_prob = Max3(f0);
-  const float roughness_influence =
-      glm::smoothstep(0.0f, 1.0f, material.GetRoughness() * 0.7f);
-  return glm::mix(base_prob, base_prob * 0.5f, roughness_influence);
-}
-
-float ComputeDiffuseWeight(const Material &material) {
-  return 1.0f - ComputeSpecularWeight(material);
-}
-
 struct AreaLightSample {
   Point Position;
   Vector Normal;
@@ -92,8 +77,8 @@ std::optional<AreaLightSample> SampleMeshAreaLight(const Mesh &mesh) {
 
 RGB EvaluateBSDF(const Vector &wo_local, const Vector &wi_local,
                  const Material &material) {
-  const float specular_weight = ComputeSpecularWeight(material);
-  const float diffuse_weight = ComputeDiffuseWeight(material);
+  const float specular_weight = material.GetSpecularProbability();
+  const float diffuse_weight = 1.0f - specular_weight;
   const LambertianBRDF lambertian{};
   const MicrofacetBRDF microfacet{};
   return diffuse_weight * lambertian.Evaluate(wo_local, wi_local, material) +

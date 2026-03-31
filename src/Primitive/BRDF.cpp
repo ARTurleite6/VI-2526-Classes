@@ -101,7 +101,9 @@ float MicrofacetBRDF::PDF(const Vector &wo_local, const Vector &wi_local,
   float D = D_GGX(NoH, a);
   float G1 = G1_Smith(NoV, a);
 
-  // VNDF PDF with Jacobian from half-vector to direction space.
+  // Visible-normal GGX PDF converted from half-vector to reflected direction.
+  // For the Heitz VNDF sampler, the reflected-direction density simplifies to
+  // D(h) * G1(v) / (4 * max(n·v, 0)).
   return (D * G1) / (4.0f * NoV);
 }
 

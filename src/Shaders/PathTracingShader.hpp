@@ -30,8 +30,9 @@ private:
                          const Intersection &intersection) const;
 
   RGB IndirectIllumination(const Ray &ray, const Scene &scene,
-                           const Intersection &intersection, const Material &material, int depth,
-                           bool allow_emissive) const;
+                           const Intersection &intersection,
+                           const Material &material, int depth,
+                           bool allow_emissive [[maybe_unused]]) const;
 
   RGB m_BackgroundColor;
   DirectIlluminationMode m_DirectIlluminationMode;

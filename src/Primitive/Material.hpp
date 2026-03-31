@@ -4,6 +4,9 @@
 #include "Math/RGB.hpp"
 #include "Math/Vector.hpp"
 
+#include <algorithm>
+#include <glm/common.hpp>
+
 namespace VI {
 
 struct MaterialDesc {
@@ -41,6 +44,14 @@ public:
 
   constexpr float GetRoughness() const { return m_Roughness; }
   constexpr float GetMetallic() const { return m_Metallic; }
+  float GetSpecularProbability() const {
+    const RGB f0 = glm::mix(RGB{0.04f}, GetAlbedo(), GetMetallic());
+    const float base_probability = std::max(f0.x, std::max(f0.y, f0.z));
+    const float roughness_influence =
+        glm::smoothstep(0.0f, 1.0f, GetRoughness() * 0.7f);
+    return glm::mix(base_probability, base_probability * 0.5f,
+                    roughness_influence);
+  }
 
   constexpr RGB GetEmissionColor() const { return m_EmissionColor; }
   constexpr float GetEmissionPower() const { return m_EmissionPower; }
