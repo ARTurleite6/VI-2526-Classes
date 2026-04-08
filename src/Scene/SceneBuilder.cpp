@@ -504,25 +504,25 @@ Scene CreateImportanceSamplingCornellBox() {
       .Name = "Dominant Light",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-      .EmissionPower = 20.f,
+      .EmissionPower = 10.f,
   });
   const int weak_light_1_mat = scene.AddMaterial({
       .Name = "Weak Light 1",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-      .EmissionPower = 2.f,
+      .EmissionPower = 1.f,
   });
   const int weak_light_2_mat = scene.AddMaterial({
       .Name = "Weak Light 2",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-      .EmissionPower = 2.f,
+      .EmissionPower = 1.f,
   });
   const int weak_light_3_mat = scene.AddMaterial({
       .Name = "Weak Light 3",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-      .EmissionPower = 2.f,
+      .EmissionPower = 1.f,
   });
 
   auto add_area_light = [&scene](std::string_view name, int material_index,
@@ -546,16 +546,19 @@ Scene CreateImportanceSamplingCornellBox() {
                        material_index);
   };
 
-  // Spread the emitters across the ceiling so the sampling difference is more
-  // visible spatially than with a tight 2x2 cluster.
-  add_area_light("Ceiling Light Dominant", dominant_light_mat, 70.0f, 140.0f,
-                 60.0f, 130.0f);
-  add_area_light("Ceiling Light Weak 1", weak_light_1_mat, 320.0f, 390.0f,
-                 70.0f, 140.0f);
-  add_area_light("Ceiling Light Weak 2", weak_light_2_mat, 80.0f, 150.0f,
-                 280.0f, 350.0f);
-  add_area_light("Ceiling Light Weak 3", weak_light_3_mat, 330.0f, 400.0f,
-                 290.0f, 360.0f);
+    // Spread the emitters across the ceiling so the sampling difference is more
+    // visible spatially than with a tight 2x2 cluster.
+    add_area_light("Ceiling Light Dominant", dominant_light_mat, 180.0f, 280.0f,
+                   180.0f, 280.0f);
+    add_area_light("Ceiling Light Weak 1", weak_light_1_mat, 360.0f, 410.0f,
+                   70.0f, 120.0f);
+    add_area_light("Ceiling Light Weak 1", weak_light_1_mat, 50.0f, 100.0f,
+                     60.0f, 130.0f);
+    add_area_light("Ceiling Light Weak 2", weak_light_2_mat, 60.0f, 110.0f,
+                   280.0f, 350.0f);
+    add_area_light("Ceiling Light Weak 3", weak_light_3_mat, 370.0f, 420.0f,
+                   290.0f, 360.0f);
+    
 
   // Floor
   {

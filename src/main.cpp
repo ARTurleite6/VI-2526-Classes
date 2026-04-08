@@ -35,7 +35,7 @@ int main() {
 
   scene.Build();
   Renderer renderer;
-  constexpr int spp = 40;
+  constexpr int spp = 5;
   const auto image =
       renderer.Render(scene, camera, path_tracing_shader, spp, false);
 
