@@ -2,8 +2,8 @@
 
 #include "Math/DiscreteDistribution.hpp"
 #include "Math/Math.hpp"
-#include "Primitive/Geometry/Mesh.hpp"
 #include "Primitive/Geometry/Geometry.hpp"
+#include "Primitive/Geometry/Mesh.hpp"
 #include "Ray/Intersection.hpp"
 #include "Ray/Ray.hpp"
 
@@ -13,25 +13,6 @@ namespace {
 bool IsSupportedDirectLightType(const LightType light_type) {
   return light_type == LightType::Ambient || light_type == LightType::Point ||
          light_type == LightType::Area;
-}
-
-float ComputeTriangleArea(const Triangle &triangle) {
-  const auto [v1, v2, v3] = triangle.GetVertices();
-  return 0.5f * glm::length(glm::cross(v2 - v1, v3 - v1));
-}
-
-[[maybe_unused]] float ComputeMeshArea(const Mesh &mesh) {
-  float total_area = 0.f;
-  for (size_t i = 0; i < mesh.GetTriangleCount(); ++i) {
-    total_area += ComputeTriangleArea(mesh.GetTriangle(i));
-  }
-  return total_area;
-}
-
-[[maybe_unused]] float ComputeLuminance(const RGB &radiance) {
-  (void)radiance;
-  // TODO(student): compute a scalar light contribution from RGB radiance.
-  return 0.f;
 }
 
 float ComputeLightWeight(const Scene &scene, const Light &light) {

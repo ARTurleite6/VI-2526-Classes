@@ -21,15 +21,6 @@ constexpr float MAX_DEPTH = 5;
 
 inline float max3(const Vector &v) { return std::max(v.x, std::max(v.y, v.z)); }
 
-inline float GetSpecularProbability(const Material &material) {
-  Vector F0 =
-      glm::mix(Vector(0.04f), material.GetAlbedo(), material.GetMetallic());
-  float baseProb = max3(F0);
-  float roughnessInfluence =
-      glm::smoothstep(0.0f, 1.0f, material.GetRoughness() * 0.7f);
-  return glm::mix(baseProb, baseProb * 0.5f, roughnessInfluence);
-}
-
 RGB PathTracingShader::Execute(const Ray &ray, const Scene &scene) const {
   Intersection intersection{};
   if (!scene.Trace(ray, intersection)) {

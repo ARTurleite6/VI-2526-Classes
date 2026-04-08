@@ -21,6 +21,10 @@ public:
         m_BoundingBox.Update(v2);
         m_BoundingBox.Update(v3);
       }
+
+      for (const auto &t : m_Triangles) {
+        m_Area += t.GetArea();
+      }
     }
   }
 
@@ -33,9 +37,12 @@ public:
     m_Triangles.push_back(triangle);
   }
 
+  float GetArea() const noexcept { return m_Area; }
+
 private:
   std::string m_Name;
   std::vector<Triangle> m_Triangles{};
   BoundingBox m_BoundingBox{};
+  float m_Area{};
 };
 } // namespace VI

@@ -12,10 +12,13 @@ public:
   Triangle(const Point &v1, const Point &v2, const Point &v3,
            const Vector &normal, bool back_face_culling = false)
       : m_V1{v1}, m_V2{v2}, m_V3{v3}, m_Normal{normal},
+        m_Area{0.5f * glm::length(glm::cross(v2 - v1, v3 - v1))},
         m_BackFaceCulling{back_face_culling} {
     m_BoundingBox = {.Min = v1, .Max = v1};
     m_BoundingBox.Update(v2);
     m_BoundingBox.Update(v3);
+
+    m_Area = 0.5f * glm::length(glm::cross(v2 - v1, v3 - v1));
   }
 
   bool Intersect(const Ray &r, Intersection &i) const;
@@ -26,9 +29,12 @@ public:
   }
   Vector GetNormal() const noexcept { return m_Normal; }
 
+  float GetArea() const noexcept { return m_Area; }
+
 private:
   Point m_V1, m_V2, m_V3;
   Vector m_Normal;
+  float m_Area;
   BoundingBox m_BoundingBox;
   bool m_BackFaceCulling;
 };
