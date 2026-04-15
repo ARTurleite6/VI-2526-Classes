@@ -504,41 +504,25 @@ Scene CreateImportanceSamplingCornellBox() {
       .Name = "Dominant Light",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-<<<<<<< HEAD
       .EmissionPower = 10.f,
-=======
-      .EmissionPower = 20.f,
->>>>>>> 4df7924 (Clean Snapshot)
   });
   const int weak_light_1_mat = scene.AddMaterial({
       .Name = "Weak Light 1",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-<<<<<<< HEAD
       .EmissionPower = 1.f,
-=======
-      .EmissionPower = 2.f,
->>>>>>> 4df7924 (Clean Snapshot)
   });
   const int weak_light_2_mat = scene.AddMaterial({
       .Name = "Weak Light 2",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-<<<<<<< HEAD
       .EmissionPower = 1.f,
-=======
-      .EmissionPower = 2.f,
->>>>>>> 4df7924 (Clean Snapshot)
   });
   const int weak_light_3_mat = scene.AddMaterial({
       .Name = "Weak Light 3",
       .Albedo = {1.f, 1.f, 1.f},
       .EmissionColor = {1.f, 1.f, 1.f},
-<<<<<<< HEAD
       .EmissionPower = 1.f,
-=======
-      .EmissionPower = 2.f,
->>>>>>> 4df7924 (Clean Snapshot)
   });
 
   auto add_area_light = [&scene](std::string_view name, int material_index,
