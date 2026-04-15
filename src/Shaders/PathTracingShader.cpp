@@ -45,9 +45,7 @@ RGB PathTracingShader::DoExecute(const Ray &ray, const Scene &scene,
     return allow_emissive ? material.GetRadiance() : RGB{0.0f};
   }
 
-  color +=
-      IndirectIllumination(ray, scene, intersection, material, depth,
-                           allow_emissive);
+  color += IndirectIllumination(ray, scene, intersection, material, depth, allow_emissive);
 
   return color + DirectIllumination(ray, scene, intersection);
 }
@@ -70,6 +68,10 @@ RGB PathTracingShader::IndirectIllumination(const Ray &ray, const Scene &scene,
       FaceForward(intersection.Normal, -ray.Direction);
 
   if (material.GetMetallic() <= 0.f) {  // no specular, thus diffuse
+      
+    // this return cancels indirect diffuse: remove it
+    return RGB{0.0f};
+      
     const LambertianBRDF lambertian{};
     const OrthonormalBasis basis{shading_normal};
     const Vector wo_local = basis.WorldToLocal(-ray.Direction);

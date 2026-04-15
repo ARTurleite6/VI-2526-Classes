@@ -17,25 +17,32 @@ using namespace VI;
 int main() {
   auto begin = std::chrono::system_clock::now();
 
-  constexpr int w = 800;
-  constexpr int h = 600;
+  constexpr int w = 670;
+  constexpr int h = 550;
 
-  constexpr Point Eye = {280, 265, -500};
-  constexpr Point At = {280, 260, 0};
+  constexpr Point Eye = {225, 282, -470};
+  constexpr Point At = {225, 277, 0};
 
   constexpr Vector Up = {0, 1, 0};
   constexpr float fovH = 60.f;
   constexpr float fovHrad = fovH * 3.14f / 180.f; // to radians
   Camera camera{Eye, At, Up, w, h, fovHrad};
-  constexpr auto direct_mode = DirectIlluminationMode::Importance;
-  // constexpr auto direct_mode = DirectIlluminationMode::Uniform;
+  //constexpr auto direct_mode = DirectIlluminationMode::Importance;
+  constexpr auto direct_mode = DirectIlluminationMode::Uniform;
   PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.2f}, direct_mode};
 
   Scene scene = CreateImportanceSamplingCornellBox();
 
   scene.Build();
   Renderer renderer;
-  constexpr int spp = 5;
+  // VERY LOW QUALITY
+  constexpr int spp = 1;
+  // LOW QUALITY
+  //constexpr int spp = 16;
+  // AVERAGE QUALITY
+  //constexpr int spp = 64;
+  // HIGH QUALITY
+  //constexpr int spp = 512;
   const auto image =
       renderer.Render(scene, camera, path_tracing_shader, spp, false);
 

@@ -14,15 +14,24 @@ constexpr float MIN_ROUGHNESS = 0.02f;
 
 Vector LambertianBRDF::Sample(const Vector &wo_local [[maybe_unused]],
                               const Material &material [[maybe_unused]]) const {
-  float u1 = Random::RandomFloat(0, 1);
+  float const u1 = Random::RandomFloat(0, 1);
   float u2 = Random::RandomFloat(0, 1);
 
-  float r = glm::sqrt(u1);
-  float theta = 2.0f * glm::pi<float>() * u2;
+  float const phi = 2.0f * glm::pi<float>() * u1;
+    
+  /*
+   * This is the extensive version, but we don't really need the value of theta,
+   * just its cos and sin, thus optimize
+   
+  float const theta = glm::acos(glm::sqrt(u2));
 
-  float x = r * glm::cos(theta);
-  float y = r * glm::sin(theta);
-  float z = glm::sqrt(1.0f - u1);
+  float const x = glm::sin(theta) * glm::cos(phi);
+  float const y = glm::sin(theta) * glm::sin(phi);
+  float const z = glm::cos(theta);
+  */
+  float const x = glm::sqrt(1-u2) * glm::cos(phi);
+  float const y = glm::sqrt(1-u2) * glm::sin(phi);
+  float const z = glm::sqrt(u2);
 
   return Vector{x, y, z};
 }
