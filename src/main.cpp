@@ -29,6 +29,7 @@ int main() {
   Camera camera{Eye, At, Up, w, h, fovHrad};
   //constexpr auto direct_mode = DirectIlluminationMode::Importance;
   constexpr auto direct_mode = DirectIlluminationMode::Uniform;
+  //constexpr auto direct_mode = DirectIlluminationMode::All;
   PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.2f}, direct_mode};
 
   Scene scene = CreateImportanceSamplingCornellBox();

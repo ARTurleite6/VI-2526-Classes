@@ -121,6 +121,26 @@ SelectedLight SelectImportanceLight(const Scene &scene) {
   (void)scene;
   // TODO(student): sample a light using the precomputed importance-sampling
   // distribution stored in the scene.
+    const auto &distribution = scene.GetLightSamplingDistribution();
+    const int supported_light_count =
+        static_cast<int>(distribution.LightIndices.size());
+    if (supported_light_count <= 0) {
+      return {};
+    }
+
+    /*
+        Select a light source using the distribution
+        There are 2 functions available:
+     
+     SampleCDFIndex(distribution.CDF, Random::RandomFloat(0.f, 1.f))
+     
+     GetPDFValue(distribution.PDF,sampled_light_index)
+     
+     */
+
+    
+    //return {.LightPtr =  ,
+    //        .SelectionPDF = };
   return {};
 }
 
