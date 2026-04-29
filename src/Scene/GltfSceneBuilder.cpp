@@ -1,0 +1,545 @@
+#define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define STB_IMAGE_IMPLEMENTATION
+#include <tiny_gltf.h>
+
+#include <glm/ext/matrix_float3x3.hpp>
+#include <glm/ext/matrix_float4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/vector_float4.hpp>
+#include <glm/fwd.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/matrix.hpp>
+
+#include <algorithm>
+#include <cstddef>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include <cstdint>
+#include <filesystem>
+#include <format>
+#include <optional>
+#include <stdexcept>
+#include <string>
+
+#include "Scene/Scene.hpp"
+#include "Scene/SceneBuilder.hpp"
+
+#include "Image/Image.hpp"
+#include "Math/RGB.hpp"
+#include "Math/Vector.hpp"
+#include "Primitive/Geometry/Mesh.hpp"
+#include "Primitive/Geometry/Triangle.hpp"
+#include "Primitive/Material.hpp"
+
+namespace VI
+{
+namespace
+{
+
+const unsigned char* GetAccessorData(const tinygltf::Model& model, const tinygltf::Accessor& accessor)
+{
+  // glTF mesh attributes are stored indirectly:
+  // accessor -> bufferView -> buffer -> raw bytes.
+  // The accessor tells us the typed view; the buffer view tells us where the
+  // bytes live inside the binary buffer.
+  if (accessor.bufferView < 0 || static_cast<size_t>(accessor.bufferView) >= model.bufferViews.size())
+  {
+    throw std::runtime_error("glTF accessor is missing a valid buffer view");
+  }
+
+  const tinygltf::BufferView& buffer_view = model.bufferViews[accessor.bufferView];
+  if (buffer_view.buffer < 0 || static_cast<size_t>(buffer_view.buffer) >= model.buffers.size())
+  {
+    throw std::runtime_error("glTF buffer view is missing a valid buffer");
+  }
+
+  const tinygltf::Buffer& buffer = model.buffers[buffer_view.buffer];
+  return buffer.data.data() + buffer_view.byteOffset + accessor.byteOffset;
+}
+
+int GetAccessorStride(const tinygltf::Model& model, const tinygltf::Accessor& accessor)
+{
+  const tinygltf::BufferView& buffer_view = model.bufferViews[accessor.bufferView];
+  const int stride = accessor.ByteStride(buffer_view);
+  if (stride <= 0)
+  {
+    throw std::runtime_error("glTF accessor has invalid byte stride");
+  }
+  return stride;
+}
+
+const tinygltf::Accessor& GetAccessor(const tinygltf::Model& model, int accessor_index)
+{
+  if (accessor_index < 0 || static_cast<size_t>(accessor_index) >= model.accessors.size())
+  {
+    throw std::runtime_error("glTF primitive references an invalid accessor");
+  }
+  return model.accessors[accessor_index];
+}
+
+int FindAttribute(const tinygltf::Primitive& primitive, const std::string& name)
+{
+  const auto it = primitive.attributes.find(name);
+  return it == primitive.attributes.end() ? -1 : it->second;
+}
+
+Vec2 ReadVec2(const tinygltf::Model& model, const tinygltf::Accessor& accessor, size_t index)
+{
+  if (accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT || accessor.type != TINYGLTF_TYPE_VEC2)
+  {
+    throw std::runtime_error("glTF TEXCOORD_0 accessor must be FLOAT VEC2");
+  }
+
+  const unsigned char* data = GetAccessorData(model, accessor);
+  const int stride = GetAccessorStride(model, accessor);
+  const auto* values = reinterpret_cast<const float*>(data + index * stride);
+  return Vec2{values[0], values[1]};
+}
+
+Vector ReadVec3(const tinygltf::Model& model, const tinygltf::Accessor& accessor, size_t index, std::string_view attribute_name)
+{
+  if (accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT || accessor.type != TINYGLTF_TYPE_VEC3)
+  {
+    throw std::runtime_error(std::string{"glTF "} + std::string{attribute_name} + " accessor must be FLOAT VEC3");
+  }
+
+  const unsigned char* data = GetAccessorData(model, accessor);
+  const int stride = GetAccessorStride(model, accessor);
+  const auto* values = reinterpret_cast<const float*>(data + index * stride);
+  return Vector{values[0], values[1], values[2]};
+}
+
+uint32_t ReadIndexValue(const unsigned char* data, size_t index, int component_type)
+{
+  switch (component_type)
+  {
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+      return static_cast<uint32_t>(data[index]);
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+      return static_cast<uint32_t>(reinterpret_cast<const uint16_t*>(data)[index]);
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+      return reinterpret_cast<const uint32_t*>(data)[index];
+    default:
+      throw std::runtime_error("glTF indices must use unsigned byte, short, or int components");
+  }
+}
+
+std::vector<uint32_t> ReadIndices(const tinygltf::Model& model, const tinygltf::Primitive& primitive, size_t vertex_count)
+{
+  if (primitive.indices < 0)
+  {
+    // Some glTF primitives are non-indexed. In that case the vertices are
+    // already ordered as triangles, so we synthesize indices 0, 1, 2, ...
+    std::vector<uint32_t> indices(vertex_count);
+    for (size_t i = 0; i < vertex_count; ++i)
+    {
+      indices[i] = static_cast<uint32_t>(i);
+    }
+    return indices;
+  }
+
+  const tinygltf::Accessor& accessor = GetAccessor(model, primitive.indices);
+  if (accessor.type != TINYGLTF_TYPE_SCALAR)
+  {
+    throw std::runtime_error("glTF index accessor must be SCALAR");
+  }
+
+  const unsigned char* data = GetAccessorData(model, accessor);
+  std::vector<uint32_t> indices(accessor.count);
+  for (size_t i = 0; i < accessor.count; ++i)
+  {
+    indices[i] = ReadIndexValue(data, i, accessor.componentType);
+  }
+  return indices;
+}
+
+TextureWrapMode ConvertWrapMode(int wrap)
+{
+  switch (wrap)
+  {
+    case TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE:
+      return TextureWrapMode::ClampToEdge;
+    case TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT:
+      return TextureWrapMode::MirroredRepeat;
+    case TINYGLTF_TEXTURE_WRAP_REPEAT:
+    default:
+      return TextureWrapMode::Repeat;
+  }
+}
+
+TextureFilterMode ConvertFilterMode(int min_filter, int mag_filter)
+{
+  if (min_filter == TINYGLTF_TEXTURE_FILTER_NEAREST || mag_filter == TINYGLTF_TEXTURE_FILTER_NEAREST)
+  {
+    return TextureFilterMode::Nearest;
+  }
+  return TextureFilterMode::Linear;
+}
+
+TextureSampler CreateTextureSampler(const tinygltf::Model& model, int texture_index)
+{
+  // A glTF texture does not directly contain pixels. It points to an image,
+  // and optionally to a sampler that describes wrapping and filtering.
+  if (texture_index < 0 || static_cast<size_t>(texture_index) >= model.textures.size())
+  {
+    throw std::runtime_error("glTF material references an invalid texture");
+  }
+
+  const tinygltf::Texture& texture = model.textures[texture_index];
+  if (texture.source < 0 || static_cast<size_t>(texture.source) >= model.images.size())
+  {
+    throw std::runtime_error("glTF texture references an invalid image");
+  }
+
+  const tinygltf::Image& source = model.images[texture.source];
+  if (source.width <= 0 || source.height <= 0 || source.image.empty())
+  {
+    throw std::runtime_error("glTF image has no decoded pixels");
+  }
+  if (source.bits != 8)
+  {
+    throw std::runtime_error("Only 8-bit glTF base color textures are supported");
+  }
+
+  Image image{source.width, source.height};
+  const int component_count = std::max(source.component, 1);
+  for (int y = 0; y < source.height; ++y)
+  {
+    for (int x = 0; x < source.width; ++x)
+    {
+      // TinyGLTF decodes image pixels as bytes in the 0..255 range. The ray
+      // tracer stores colors as floats in the 0..1 range.
+      const size_t pixel_index = static_cast<size_t>((x + y * source.width) * component_count);
+      const float r = static_cast<float>(source.image[pixel_index]) / 255.0f;
+      const float g = static_cast<float>(source.image[pixel_index + std::min(1, component_count - 1)]) / 255.0f;
+      const float b = static_cast<float>(source.image[pixel_index + std::min(2, component_count - 1)]) / 255.0f;
+      image.Set(x, y, RGB{r, g, b});
+    }
+  }
+
+  TextureSampler sampler{.Data = std::move(image)};
+  if (texture.sampler >= 0 && static_cast<size_t>(texture.sampler) < model.samplers.size())
+  {
+    const tinygltf::Sampler& gltf_sampler = model.samplers[texture.sampler];
+    sampler.WrapS = ConvertWrapMode(gltf_sampler.wrapS);
+    sampler.WrapT = ConvertWrapMode(gltf_sampler.wrapT);
+    sampler.Filter = ConvertFilterMode(gltf_sampler.minFilter, gltf_sampler.magFilter);
+  }
+  return sampler;
+}
+
+float ReadEmissiveStrength(const tinygltf::Material& material)
+{
+  const auto extension_it = material.extensions.find("KHR_materials_emissive_strength");
+  if (extension_it == material.extensions.end() || !extension_it->second.IsObject())
+  {
+    return 1.0f;
+  }
+
+  const tinygltf::Value& strength = extension_it->second.Get("emissiveStrength");
+  return strength.IsNumber() ? static_cast<float>(strength.GetNumberAsDouble()) : 1.0f;
+}
+
+std::vector<int> ImportMaterials(const tinygltf::Model& model, Scene& scene)
+{
+  // Scene::AddMaterial returns this renderer's internal material id. glTF
+  // primitives still refer to materials by their glTF index, so material_map
+  // translates glTF material index -> renderer material id.
+  std::vector<int> material_map{};
+  material_map.reserve(model.materials.size());
+
+  for (size_t material_index = 0; material_index < model.materials.size(); ++material_index)
+  {
+    const tinygltf::Material& gltf_material = model.materials[material_index];
+    const auto& pbr = gltf_material.pbrMetallicRoughness;
+
+    const std::string name = gltf_material.name.empty() ? std::format("glTF Material {}", material_index) : gltf_material.name;
+    const RGB base_color{
+        static_cast<float>(pbr.baseColorFactor[0]),
+        static_cast<float>(pbr.baseColorFactor[1]),
+        static_cast<float>(pbr.baseColorFactor[2]),
+    };
+    const RGB emission_color{
+        static_cast<float>(gltf_material.emissiveFactor[0]),
+        static_cast<float>(gltf_material.emissiveFactor[1]),
+        static_cast<float>(gltf_material.emissiveFactor[2]),
+    };
+
+    std::optional<TextureSampler> albedo_texture = std::nullopt;
+    if (pbr.baseColorTexture.index >= 0)
+    {
+      // Base color textures modulate the material albedo during shading.
+      albedo_texture = CreateTextureSampler(model, pbr.baseColorTexture.index);
+    }
+    std::optional<TextureSampler> metallic_roughness_texture = std::nullopt;
+    if (pbr.metallicRoughnessTexture.index >= 0)
+    {
+      // In glTF's metallic-roughness texture, roughness is stored in the green
+      // channel and metallic is stored in the blue channel.
+      metallic_roughness_texture = CreateTextureSampler(model, pbr.metallicRoughnessTexture.index);
+    }
+
+    material_map.push_back(scene.AddMaterial({
+        .Name = name,
+        .Albedo = base_color,
+        .Roughness = static_cast<float>(pbr.roughnessFactor),
+        .Metallic = static_cast<float>(pbr.metallicFactor),
+        .EmissionColor = emission_color,
+        .EmissionPower = glm::length(emission_color) <= 0.0f ? 0.0f : ReadEmissiveStrength(gltf_material),
+        .AlbedoTexture = std::move(albedo_texture),
+        .MetallicRoughnessTexture = std::move(metallic_roughness_texture),
+    }));
+  }
+
+  return material_map;
+}
+
+glm::mat4 GetNodeTransform(const tinygltf::Node& node)
+{
+  if (node.matrix.size() == 16)
+  {
+    // glTF nodes can store a full transform matrix directly.
+    glm::mat4 transform{1.f};
+    for (int column = 0; column < 4; ++column)
+    {
+      for (int row = 0; row < 4; ++row)
+      {
+        transform[column][row] = static_cast<float>(node.matrix[static_cast<size_t>(column * 4 + row)]);
+      }
+    }
+    return transform;
+  }
+
+  glm::mat4 transform{1.f};
+  // If no matrix is provided, glTF stores the node transform as separate
+  // translation, rotation, and scale components.
+  if (node.translation.size() == 3)
+  {
+    transform = glm::translate(transform, Vector{
+                                              static_cast<float>(node.translation[0]),
+                                              static_cast<float>(node.translation[1]),
+                                              static_cast<float>(node.translation[2]),
+                                          });
+  }
+
+  if (node.rotation.size() == 4)
+  {
+    const glm::quat rotation{
+        static_cast<float>(node.rotation[3]),
+        static_cast<float>(node.rotation[0]),
+        static_cast<float>(node.rotation[1]),
+        static_cast<float>(node.rotation[2]),
+    };
+    transform *= glm::mat4_cast(rotation);
+  }
+
+  if (node.scale.size() == 3)
+  {
+    transform = glm::scale(transform, Vector{
+                                          static_cast<float>(node.scale[0]),
+                                          static_cast<float>(node.scale[1]),
+                                          static_cast<float>(node.scale[2]),
+                                      });
+  }
+
+  return transform;
+}
+
+Vector ComputeFaceNormal(const Point& v0, const Point& v1, const Point& v2)
+{
+  const Vector normal = glm::cross(v1 - v0, v2 - v0);
+  const float length = glm::length(normal);
+  return length > 0.0f ? normal / length : Vector{0.f, 1.f, 0.f};
+}
+
+void ImportPrimitive(const tinygltf::Model& model, const tinygltf::Mesh& mesh, const tinygltf::Primitive& primitive, const glm::mat4& transform, const std::vector<int>& material_map, int default_material, Scene& scene)
+{
+  // A glTF mesh can contain multiple primitives. Each primitive is one draw
+  // group: its own attributes, optional index buffer, and material reference.
+  if (primitive.mode != -1 && primitive.mode != TINYGLTF_MODE_TRIANGLES)
+  {
+    throw std::runtime_error("Only glTF triangle primitives are supported");
+  }
+
+  const int position_accessor_index = FindAttribute(primitive, "POSITION");
+  if (position_accessor_index < 0)
+  {
+    throw std::runtime_error("glTF primitive is missing POSITION");
+  }
+
+  const tinygltf::Accessor& position_accessor = GetAccessor(model, position_accessor_index);
+  const int normal_accessor_index = FindAttribute(primitive, "NORMAL");
+  const int uv_accessor_index = FindAttribute(primitive, "TEXCOORD_0");
+
+  // POSITION is required for geometry. NORMAL and TEXCOORD_0 are optional:
+  // normals can be reconstructed from the triangle face, and missing UVs mean
+  // the material will sample at (0, 0).
+  const tinygltf::Accessor* normal_accessor = normal_accessor_index >= 0 ? &GetAccessor(model, normal_accessor_index) : nullptr;
+  const tinygltf::Accessor* uv_accessor = uv_accessor_index >= 0 ? &GetAccessor(model, uv_accessor_index) : nullptr;
+
+  const std::vector<uint32_t> indices = ReadIndices(model, primitive, position_accessor.count);
+  if (indices.size() % 3 != 0)
+  {
+    throw std::runtime_error("glTF triangle primitive index count is not divisible by three");
+  }
+
+  std::vector<Triangle> triangles{};
+  triangles.reserve(indices.size() / 3);
+
+  // Normals must be transformed by the inverse-transpose of the model matrix,
+  // not by the position transform directly. This keeps normals correct under
+  // non-uniform scale.
+  const glm::mat3 normal_transform = glm::transpose(glm::inverse(glm::mat3(transform)));
+  for (size_t i = 0; i < indices.size(); i += 3)
+  {
+    // Every three indices form one triangle.
+    const uint32_t i0 = indices[i + 0];
+    const uint32_t i1 = indices[i + 1];
+    const uint32_t i2 = indices[i + 2];
+    if (i0 >= position_accessor.count || i1 >= position_accessor.count || i2 >= position_accessor.count)
+    {
+      throw std::runtime_error("glTF primitive index is out of range");
+    }
+
+    // Convert local glTF vertex positions into world-space positions for the
+    // ray tracer. The original node hierarchy is flattened into transformed
+    // triangles.
+    const glm::vec4 hp0 = transform * glm::vec4{ReadVec3(model, position_accessor, i0, "POSITION"), 1.0f};
+    const glm::vec4 hp1 = transform * glm::vec4{ReadVec3(model, position_accessor, i1, "POSITION"), 1.0f};
+    const glm::vec4 hp2 = transform * glm::vec4{ReadVec3(model, position_accessor, i2, "POSITION"), 1.0f};
+    const Point p0{hp0.x, hp0.y, hp0.z};
+    const Point p1{hp1.x, hp1.y, hp1.z};
+    const Point p2{hp2.x, hp2.y, hp2.z};
+
+    Vector normal = ComputeFaceNormal(p0, p1, p2);
+    if (normal_accessor != nullptr && i0 < normal_accessor->count && i1 < normal_accessor->count && i2 < normal_accessor->count)
+    {
+      // This renderer stores one normal per Triangle. If glTF provides vertex
+      // normals, average the three transformed normals into a single triangle
+      // normal. Otherwise, keep the geometric face normal computed above.
+      const Vector n0 = normal_transform * ReadVec3(model, *normal_accessor, i0, "NORMAL");
+      const Vector n1 = normal_transform * ReadVec3(model, *normal_accessor, i1, "NORMAL");
+      const Vector n2 = normal_transform * ReadVec3(model, *normal_accessor, i2, "NORMAL");
+      const Vector averaged = n0 + n1 + n2;
+      if (glm::length(averaged) > 0.0f)
+      {
+        normal = glm::normalize(averaged);
+      }
+    }
+
+    // Store the three vertex UVs on the Triangle. During ray intersection,
+    // Triangle::Intersect interpolates these UVs to get the texture coordinate
+    // at the exact hit point.
+    const Vec2 uv0 = uv_accessor != nullptr && i0 < uv_accessor->count ? ReadVec2(model, *uv_accessor, i0) : Vec2{0.f};
+    const Vec2 uv1 = uv_accessor != nullptr && i1 < uv_accessor->count ? ReadVec2(model, *uv_accessor, i1) : Vec2{0.f};
+    const Vec2 uv2 = uv_accessor != nullptr && i2 < uv_accessor->count ? ReadVec2(model, *uv_accessor, i2) : Vec2{0.f};
+    triangles.emplace_back(p0, p1, p2, normal, uv0, uv1, uv2);
+  }
+
+  // If the primitive references a valid glTF material, translate it through
+  // material_map. Otherwise use a simple default material so the mesh still
+  // renders.
+  const int material = primitive.material >= 0 && static_cast<size_t>(primitive.material) < material_map.size() ? material_map[primitive.material] : default_material;
+  const std::string mesh_name = mesh.name.empty() ? "glTF Mesh" : mesh.name;
+  scene.AddPrimitive(Mesh{mesh_name, std::move(triangles)}, material);
+}
+
+void ImportNode(const tinygltf::Model& model, int node_index, const glm::mat4& parent_transform, const std::vector<int>& material_map, int default_material, Scene& scene)
+{
+  if (node_index < 0 || static_cast<size_t>(node_index) >= model.nodes.size())
+  {
+    throw std::runtime_error("glTF scene references an invalid node");
+  }
+
+  const tinygltf::Node& node = model.nodes[node_index];
+  // Node transforms are hierarchical. A child is positioned relative to its
+  // parent, so we accumulate parent * local as we recurse through the graph.
+  const glm::mat4 transform = parent_transform * GetNodeTransform(node);
+
+  if (node.mesh >= 0)
+  {
+    if (static_cast<size_t>(node.mesh) >= model.meshes.size())
+    {
+      throw std::runtime_error("glTF node references an invalid mesh");
+    }
+
+    const tinygltf::Mesh& mesh = model.meshes[node.mesh];
+    for (const tinygltf::Primitive& primitive : mesh.primitives)
+    {
+      ImportPrimitive(model, mesh, primitive, transform, material_map, default_material, scene);
+    }
+  }
+
+  for (const int child : node.children)
+  {
+    // Recursively visit child nodes with the accumulated world transform.
+    ImportNode(model, child, transform, material_map, default_material, scene);
+  }
+}
+
+tinygltf::Model LoadModel(const std::filesystem::path& path)
+{
+  // TinyGLTF parses both JSON .gltf files and binary .glb files into the same
+  // tinygltf::Model structure. After this point, the importer can ignore the
+  // original container format.
+  tinygltf::Model model{};
+  tinygltf::TinyGLTF loader{};
+  loader.SetPreserveImageChannels(false);
+
+  std::string error{};
+  std::string warning{};
+  const std::string filename = path.string();
+  const bool loaded = path.extension() == ".glb" ? loader.LoadBinaryFromFile(&model, &error, &warning, filename) : loader.LoadASCIIFromFile(&model, &error, &warning, filename);
+  if (!loaded)
+  {
+    throw std::runtime_error("Failed to load glTF scene '" + filename + "': " + error);
+  }
+  if (!error.empty())
+  {
+    throw std::runtime_error("glTF loader error for '" + filename + "': " + error);
+  }
+
+  return model;
+}
+
+} // namespace
+
+Scene CreateGltfScene(const std::filesystem::path& path)
+{
+  tinygltf::Model model = LoadModel(path);
+
+  Scene scene{};
+  // Materials are imported before geometry because mesh primitives only store
+  // material indices. The default material is used for invalid or missing
+  // material references.
+  const int default_material = scene.AddMaterial({.Name = "Default glTF Material", .Albedo = RGB{0.8f}, .Roughness = 1.0f});
+  const std::vector<int> material_map = ImportMaterials(model, scene);
+
+  if (model.scenes.empty())
+  {
+    throw std::runtime_error("glTF file contains no scenes");
+  }
+
+  const int scene_index = model.defaultScene >= 0 ? model.defaultScene : 0;
+  if (scene_index < 0 || static_cast<size_t>(scene_index) >= model.scenes.size())
+  {
+    throw std::runtime_error("glTF default scene index is invalid");
+  }
+
+  // A glTF file may contain multiple scenes. We import the default scene when
+  // present, otherwise scene 0. Each scene stores indices of its root nodes.
+  for (const int node : model.scenes[scene_index].nodes)
+  {
+    ImportNode(model, node, glm::mat4{1.f}, material_map, default_material, scene);
+  }
+
+  return scene;
+}
+
+} // namespace VI

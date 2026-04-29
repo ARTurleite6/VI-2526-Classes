@@ -1,0 +1,127 @@
+#include <chrono>
+#include <filesystem>
+#include <iostream>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+
+#include "Camera/Camera.hpp"
+#include "Image/FileImages.hpp"
+#include "Image/Image.hpp"
+#include "Math/Vector.hpp"
+#include "Renderer/Renderer.hpp"
+#include "Scene/Scene.hpp"
+#include "Scene/SceneBuilder.hpp"
+#include "Shaders/AmbientShader.hpp"
+#include "Shaders/DirectIllumination.hpp"
+#include "Shaders/PathTracingShader.hpp"
+#include "Shaders/VeachShader.hpp"
+#include "Shaders/WhittedShader.hpp"
+
+using namespace VI;
+
+namespace
+{
+
+struct CommandLineOptions
+{
+  std::optional<std::filesystem::path> ScenePath = std::nullopt;
+  int SamplesPerPixel = 128;
+};
+
+CommandLineOptions ParseCommandLine(int argc, char** argv)
+{
+  CommandLineOptions options{};
+  for (int i = 1; i < argc; ++i)
+  {
+    const std::string_view arg{argv[i]};
+    if (arg == "--scene")
+    {
+      if (i + 1 >= argc)
+      {
+        throw std::invalid_argument("--scene requires a glTF path");
+      }
+      options.ScenePath = std::filesystem::path{argv[++i]};
+      continue;
+    }
+
+    if (arg == "--spp")
+    {
+      if (i + 1 >= argc)
+      {
+        throw std::invalid_argument("--spp requires a positive sample count");
+      }
+      options.SamplesPerPixel = std::stoi(argv[++i]);
+      if (options.SamplesPerPixel <= 0)
+      {
+        throw std::invalid_argument("--spp requires a positive sample count");
+      }
+      continue;
+    }
+
+    throw std::invalid_argument("Unknown argument: " + std::string{arg});
+  }
+  return options;
+}
+
+} // namespace
+
+int main(int argc, char** argv)
+{
+  auto begin = std::chrono::system_clock::now();
+  const auto options = ParseCommandLine(argc, argv);
+
+  constexpr int w = 800;
+  constexpr int h = 600;
+
+  // /*
+  // Path Tracing Cornell Box Camera
+  // constexpr Point Eye = {278, 273, -800};
+  // constexpr Point At = {278, 273, 200};
+  // constexpr Vector Up = {0, 1, 0};
+  // constexpr float fovH = 40.f;
+  // constexpr float fovHrad = fovH * 3.14f / 180.f;
+  // Camera camera{Eye, At, Up, w, h, fovHrad};
+  // PathTracingShader veach_shader{{0.0f, 0.0f, 0.0f}};
+  // Scene scene = CreateCornellBox();
+  // */
+
+  // Veach Camera
+  // Camera for the Veach demo scene: centered composition with the plate stack
+  // directly under the square lights and a less dominant floor presence.
+  constexpr Point Eye = {0, 2, -7};
+  constexpr Point At = {0, 1, 2};
+  constexpr Vector Up = {0, 1, 0};
+  constexpr float fovH = 45.f;
+
+  constexpr float fovHrad = fovH * 3.14f / 180.f;
+  Camera camera{Eye, At, Up, w, h, fovHrad};
+  Renderer renderer;
+  Image image{w, h};
+
+  if (options.ScenePath.has_value())
+  {
+    PathTracingShader path_tracing_shader{{0.0f, 0.0f, 0.0f}, DirectIlluminationMode::Importance};
+    Scene scene = CreateGltfScene(*options.ScenePath);
+    scene.Build();
+    image = renderer.Render(scene, camera, path_tracing_shader, options.SamplesPerPixel, true);
+  }
+  else
+  {
+    VeachShader veach_shader{{0.0f, 0.0f, 0.0f}};
+    Scene scene = CreateVeachScene2();
+    scene.Build();
+    image = renderer.Render(scene, camera, veach_shader, options.SamplesPerPixel, true);
+  }
+
+  ImagePPM::Save(image, "image.ppm");
+
+  auto end = std::chrono::system_clock::now();
+
+  auto duration = std::chrono::duration<double>(end - begin);
+
+  std::cout << "Time it took to render: " << duration.count() << " sec" << '\n';
+
+  return 0;
+}
